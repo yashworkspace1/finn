@@ -1,176 +1,111 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { PROMPTS } from '@/lib/ai/prompts'
-import { GeminiInsights, generateFallbackInsights } from '@/lib/ai/fallback'
-import { Transaction } from '@/lib/parser/normalizer'
-import { getTopCategories, getTotalIncome, getTotalExpenses, getSavingsRate } from '@/lib/engine/stats'
 
-// ─── Initialise client (server-side only — key never exposed to browser) ──────
-function getModel() {
-  if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured')
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-  return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-}
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY!
+)
 
-// ─── Clean Gemini response (strip markdown fences if present) ────────────────
-function cleanJSON(text: string): string {
-  return text
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim()
-}
-
-// ─── Generate insights ────────────────────────────────────────────────────────
 export async function generateInsights(
-  transactions: Transaction[],
-  stats: {
-    totalIncome: number
-    totalExpenses: number
-    savingsRate: number
-    anomalyCount: number
-    topCategories: { category: string; amount: number; percentage: number }[]
-  }
-): Promise<string> {
-  const model = getModel()
-  const topCats = getTopCategories(transactions, 5)
+  stats: any
+): Promise<any> {
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash' 
+    })
+    
+    const prompt = `
+You are FINN, an AI financial advisor.
+Analyze this financial data and respond with ONLY valid JSON, no markdown, no explanation.
 
-  const prompt = PROMPTS.generateInsights({
-    totalIncome: stats.totalIncome,
-    totalExpenses: stats.totalExpenses,
-    savingsRate: stats.savingsRate,
-    topCategories: topCats,
-    anomalyCount: stats.anomalyCount,
-    subscriptionCount: transactions.filter((t) => (t as { is_subscription?: boolean }).is_subscription).length,
-    healthScore: 0, // passed externally
-    personality: '',
-    transactionCount: transactions.length,
-    dateRange: {
-      from: transactions[0]?.date ?? '',
-      to: transactions[transactions.length - 1]?.date ?? '',
-    },
-  })
+Data:
+- Monthly Average Income: ₹${stats.monthlyIncome}
+- Monthly Average Expenses: ₹${stats.monthlyExpenses}
+- Savings Rate: ${stats.savingsRate}%
+- Health Score: ${stats.healthScore}/100
+- Personality: ${stats.personality}
+- Top Categories: ${JSON.stringify(stats.topCategories)}
+- Date Range: ${stats.dateRange?.from} to ${stats.dateRange?.to}
+- Transactions: ${stats.transactionCount}
 
-  const result = await model.generateContent(prompt)
-  return result.response.text()
-}
-
-// ─── Generate full insights object (parsed JSON) ──────────────────────────────
-export async function generateInsightsJSON(
-  transactions: Transaction[],
-  stats: Parameters<typeof generateInsights>[1] & {
-    healthScore: number
-    personality: string
-    subscriptionCount?: number
-  }
-): Promise<GeminiInsights> {
-  const model = getModel()
-  const topCats = stats.topCategories.length ? stats.topCategories : getTopCategories(transactions, 5)
-
-  const prompt = PROMPTS.generateInsights({
-    totalIncome: stats.totalIncome,
-    totalExpenses: stats.totalExpenses,
-    savingsRate: stats.savingsRate,
-    topCategories: topCats,
-    anomalyCount: stats.anomalyCount,
-    subscriptionCount: stats.subscriptionCount ?? 0,
-    healthScore: stats.healthScore,
-    personality: stats.personality,
-    transactionCount: transactions.length,
-    dateRange: {
-      from: transactions[0]?.date ?? '',
-      to: transactions[transactions.length - 1]?.date ?? '',
-    },
-  })
-
-  const result = await model.generateContent(prompt)
-  const text = cleanJSON(result.response.text())
-  return JSON.parse(text) as GeminiInsights
-}
-
-// ─── Weekly nudge ─────────────────────────────────────────────────────────────
-export async function generateNudge(context: {
-  healthScore: { score: number }
-  personality: { type: string }
-  topCategories: { category: string }[]
-}): Promise<string> {
-  const model = getModel()
-  const prompt = PROMPTS.generateNudge(
-    context.healthScore.score,
-    context.personality.type,
-    context.topCategories[0]?.category ?? 'general spending'
-  )
-  const result = await model.generateContent(prompt)
-  return result.response.text().trim()
-}
-
-// ─── FinChat Q&A ──────────────────────────────────────────────────────────────
-export async function chatWithData(
-  message: string,
-  transactions: Transaction[],
-  history: { role: string; message: string }[]
-): Promise<string> {
-  const model = getModel()
-
-  const totalIncome   = getTotalIncome(transactions)
-  const totalExpenses = getTotalExpenses(transactions)
-  const savingsRate   = getSavingsRate(transactions)
-  const topCats       = getTopCategories(transactions, 5)
-
-  const prompt = PROMPTS.chatWithData(
-    message,
+Respond with ONLY this JSON structure:
+{
+  "summary": "2-3 sentence overview focused ONLY on monthly flow",
+  "insights": [
     {
-      totalIncome,
-      totalExpenses,
-      savingsRate,
-      topCategories: topCats,
-      healthScore: 0,
-      recentTransactions: transactions
-        .slice(-5)
-        .map((t) => ({ date: t.date, description: t.description, amount: t.amount, type: t.type })),
-    },
-    history
-  )
-
-  const result = await model.generateContent(prompt)
-  return result.response.text().trim()
+      "title": "insight title",
+      "description": "actionable description (proportional to monthly income - NEVER suggest saving more than the monthly income)",
+      "type": "positive|warning|danger|info"
+    }
+  ],
+  "weeklyNudge": "one specific tip (MUST be a small, realistic fraction of monthly income, e.g. 'Save ₹2,000')",
+  "savingOpportunity": "one saving tip"
 }
 
-// ─── Fallback-aware wrappers (used by API routes) ─────────────────────────────
-export async function generateInsightsWithFallback(
-  transactions: Transaction[],
-  stats: Parameters<typeof generateInsightsJSON>[1]
-): Promise<GeminiInsights> {
-  try {
-    return await generateInsightsJSON(transactions, stats)
-  } catch {
-    return generateFallbackInsights(stats)
+CRITICAL: The user earns ₹${stats.monthlyIncome} per month. NEVER suggest saving amounts larger than this. All amounts must be realistic for a single month.
+
+Maximum 3 insights. Be specific with Indian Rupee amounts. Return ONLY JSON.`
+
+    const result = await model.generateContent(prompt)
+    const text = result.response.text()
+    
+    // Clean response
+    const clean = text
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim()
+    
+    const parsed = JSON.parse(clean)
+    
+    // Validate structure
+    if (!parsed.summary || !parsed.insights) {
+      throw new Error('Invalid response structure')
+    }
+    
+    return parsed
+    
+  } catch (error: any) {
+    console.error('Gemini error:', error.message)
+    throw error
   }
 }
 
-export async function chatWithFallback(
+export async function chatWithGemini(
   message: string,
-  transactions: Transaction[],
-  history: { role: string; message: string }[]
+  context: any,
+  history: any[]
 ): Promise<string> {
   try {
-    return await chatWithData(message, transactions, history)
-  } catch {
-    const totalIncome   = getTotalIncome(transactions)
-    const totalExpenses = getTotalExpenses(transactions)
-    const savingsRate   = getSavingsRate(transactions)
-    const topCats       = getTopCategories(transactions, 3)
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash' 
+    })
+    
+    const historyText = history
+      .slice(-6)
+      .map(h => `${h.role === 'user' ? 'User' : 'FINN'}: ${h.message}`)
+      .join('\n')
+    
+    const prompt = `
+You are FINN, a friendly financial advisor.
+Answer in 2-4 sentences. Be specific and helpful.
+Use Indian Rupee ₹ for amounts.
 
-    // Smart rule-based fallback chat responses
-    const q = message.toLowerCase()
-    if (q.includes('spent') || q.includes('spend') || q.includes('most')) {
-      return `Based on your data, your top spending category is ${topCats[0]?.category ?? 'Others'} at ₹${topCats[0]?.amount.toLocaleString('en-IN') ?? 0}. Your total expenses were ₹${totalExpenses.toLocaleString('en-IN')} with a ${savingsRate}% savings rate.`
-    }
-    if (q.includes('income') || q.includes('earn')) {
-      return `Your total income recorded is ₹${totalIncome.toLocaleString('en-IN')}. After expenses of ₹${totalExpenses.toLocaleString('en-IN')}, you saved ₹${(totalIncome - totalExpenses).toLocaleString('en-IN')}.`
-    }
-    if (q.includes('save') || q.includes('saving')) {
-      return `Your current savings rate is ${savingsRate}%. ${savingsRate >= 20 ? "That's excellent — above the recommended 20%!" : "Try to target 20% by reducing discretionary spending."}`
-    }
-    return `Your financial summary: Income ₹${totalIncome.toLocaleString('en-IN')}, Expenses ₹${totalExpenses.toLocaleString('en-IN')}, Savings Rate ${savingsRate}%. Top spend: ${topCats[0]?.category ?? 'N/A'}. Ask me anything specific about your finances!`
+User's Financial Context:
+- Income: ₹${context.totalIncome?.toLocaleString('en-IN')}
+- Expenses: ₹${context.totalExpenses?.toLocaleString('en-IN')}
+- Savings Rate: ${context.savingsRate?.toFixed(1)}%
+- Health Score: ${context.healthScore}/100
+- Top Category: ${context.topCategories?.[0]?.category} (₹${context.topCategories?.[0]?.amount?.toLocaleString('en-IN')})
+
+Recent conversation:
+${historyText}
+
+User: ${message}
+FINN:`
+    
+    const result = await model.generateContent(prompt)
+    return result.response.text().trim()
+    
+  } catch (error: any) {
+    console.error('Gemini chat error:', error.message)
+    throw error
   }
 }

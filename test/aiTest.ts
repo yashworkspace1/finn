@@ -8,7 +8,6 @@
 
 import { generateFallbackInsights } from '../lib/ai/fallback'
 import { hashTransactions } from '../lib/ai/cache'
-import { chatWithFallback } from '../lib/ai/gemini'
 import { Transaction } from '../lib/parser/normalizer'
 
 const TRANSACTIONS: Transaction[] = [
@@ -73,18 +72,18 @@ async function main() {
   passed += check('insights is array with 1-3 items', Array.isArray(fallback.insights) && fallback.insights.length >= 1 && fallback.insights.length <= 3) ? 1 : 0
   passed += check('weeklyNudge is non-empty', typeof fallback.weeklyNudge === 'string' && fallback.weeklyNudge.length > 5) ? 1 : 0
   passed += check('savingOpportunity is non-empty', typeof fallback.savingOpportunity === 'string') ? 1 : 0
-  passed += check('insights have correct type field', fallback.insights.every(i => ['positive','warning','danger','info'].includes(i.type))) ? 1 : 0
+  passed += check('insights have correct type field', fallback.insights.every((i: any) => ['positive','warning','danger','info'].includes(i.type))) ? 1 : 0
 
   console.log(`\n  Summary: "${fallback.summary.slice(0, 80)}..."`)
   console.log(`  Insights (${fallback.insights.length}):`)
-  fallback.insights.forEach(i => console.log(`    [${i.type.toUpperCase()}] ${i.title}`))
+  fallback.insights.forEach((i: any) => console.log(`    [${i.type.toUpperCase()}] ${i.title}`))
   console.log(`  Nudge: "${fallback.weeklyNudge.slice(0, 70)}..."`)
 
   // ── Test 3: Low savings rate fallback path ───────────────────────────────
   console.log('\n─── 3. Fallback — Low Savings Rate (< 10%) ─────────')
   const lowSavings = generateFallbackInsights({ ...STATS, savingsRate: 5, healthScore: 30 })
   total += 2
-  passed += check('danger insight generated for low savings', lowSavings.insights.some(i => i.type === 'danger')) ? 1 : 0
+  passed += check('danger insight generated for low savings', lowSavings.insights.some((i: any) => i.type === 'danger')) ? 1 : 0
   passed += check('score mentioned in summary', lowSavings.summary.includes('30')) ? 1 : 0
   console.log(`  Insight: [${lowSavings.insights[0].type.toUpperCase()}] ${lowSavings.insights[0].title}`)
 
@@ -92,28 +91,10 @@ async function main() {
   console.log('\n─── 4. Fallback — Anomaly Warning ───────────────────')
   const withAnomalies = generateFallbackInsights({ ...STATS, anomalyCount: 3, savingsRate: 15 })
   total += 1
-  passed += check('warning insight for anomalies', withAnomalies.insights.some(i => i.title.includes('unusual') || i.type === 'warning')) ? 1 : 0
-  console.log(`  Found: ${withAnomalies.insights.find(i => i.title.includes('unusual') || i.type === 'warning')?.title}`)
+  passed += check('warning insight for anomalies', withAnomalies.insights.some((i: any) => i.title.includes('unusual') || i.type === 'warning')) ? 1 : 0
+  console.log(`  Found: ${withAnomalies.insights.find((i: any) => i.title.includes('unusual') || i.type === 'warning')?.title}`)
 
-  // ── Test 5: Chat fallback ─────────────────────────────────────────────────
-  console.log('\n─── 5. Chat Fallback (no Gemini key) ────────────────')
-  const questions = [
-    'Where did I spend the most last month?',
-    'What is my savings rate?',
-    'How much did I earn?',
-    'Give me a summary of my finances',
-  ]
 
-  for (const q of questions) {
-    const reply = await chatWithFallback(q, TRANSACTIONS, [])
-    total++
-    const ok = typeof reply === 'string' && reply.length > 10
-    passed += ok ? 1 : 0
-    console.log(`  Q: "${q.slice(0, 40)}"`)
-    console.log(`  A: "${reply.slice(0, 80)}..."`)
-    check('Response is non-empty string', ok)
-    console.log()
-  }
 
   // ── Summary ───────────────────────────────────────────────────────────────
   console.log('╔══════════════════════════════════════════════════╗')

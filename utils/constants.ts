@@ -1,11 +1,11 @@
 // ─── Chart Colors ────────────────────────────────────────────────────────────
 // Mapped to CSS variables defined in globals.css
 export const CHART_COLORS = {
-  primary:   'hsl(var(--chart-1))',   // violet
-  secondary: 'hsl(var(--chart-2))',   // emerald
-  tertiary:  'hsl(var(--chart-3))',   // indigo
-  warning:   'hsl(var(--chart-4))',   // amber
-  danger:    'hsl(var(--chart-5))',   // rose
+  primary:   '#8b5cf6',   // violet
+  secondary: '#10b981',   // emerald
+  tertiary:  '#6366f1',   // indigo
+  warning:   '#f59e0b',   // amber
+  danger:    '#f43f5e',   // rose
 }
 
 // ─── Spending Categories ──────────────────────────────────────────────────────
@@ -29,26 +29,32 @@ export type Category = (typeof CATEGORIES)[number]
 
 // ─── Per-Category Colors ──────────────────────────────────────────────────────
 export const CATEGORY_COLORS: Record<string, string> = {
-  'Food & Dining':    'hsl(var(--chart-1))',
-  'Transportation':   'hsl(var(--chart-2))',
-  'Shopping':         'hsl(var(--chart-3))',
-  'Entertainment':    'hsl(var(--chart-4))',
-  'Health & Medical': 'hsl(var(--chart-5))',
-  'Utilities':        'hsl(262 60% 55%)',
-  'Rent & Housing':   'hsl(173 45% 38%)',
-  'Salary & Income':  'hsl(173 58% 45%)',
-  'Subscriptions':    'hsl(346 60% 55%)',
-  'Education':        'hsl(245 50% 58%)',
-  'Travel':           'hsl(35 80% 55%)',
-  'Investments':      'hsl(262 70% 60%)',
-  'Others':           'hsl(0 0% 55%)',
+  'Food & Dining':    '#8b5cf6', // Violet
+  'Transportation':   '#10b981', // Emerald
+  'Shopping':         '#6366f1', // Indigo
+  'Entertainment':    '#f59e0b', // Amber
+  'Health & Medical': '#f43f5e', // Rose
+  'Utilities':        '#06b6d4', // Cyan
+  'Rent & Housing':   '#ec4899', // Pink
+  'Salary & Income':  '#22c55e', // Green
+  'Subscriptions':    '#d946ef', // Fuchsia
+  'Education':        '#3b82f6', // Blue
+  'Travel':           '#fb923c', // Orange
+  'Investments':      '#14b8a6', // Teal
+  'Others':           '#7c3aed', // Deep Violet (instead of gray)
 }
 
-// ─── Health Score Color ───────────────────────────────────────────────────────
+// ─── Health Score Colors ─────────────────────────────────────────────────────
+export const HEALTH_SCORE_COLORS = {
+  good:    '#10b981', // emerald
+  caution: '#f59e0b', // amber
+  danger:  '#f43f5e', // rose
+}
+
 export const HEALTH_SCORE_COLOR = (score: number): string => {
-  if (score >= 71) return 'hsl(var(--chart-2))'  // emerald — good
-  if (score >= 41) return 'hsl(var(--chart-4))'  // amber   — caution
-  return 'hsl(var(--chart-5))'                    // rose    — danger
+  if (score >= 71) return HEALTH_SCORE_COLORS.good
+  if (score >= 41) return HEALTH_SCORE_COLORS.caution
+  return HEALTH_SCORE_COLORS.danger
 }
 
 // ─── App-level Constants ──────────────────────────────────────────────────────

@@ -1,63 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/database/supabaseServer'
-import { parseStatement } from '@/lib/parser/index'
-import { mergeTransactions, getDateRange, filterByDateRange, filterByCustomRange } from '@/lib/engine/merger'
+import { parseStatement } from '@/lib/parser'
+import { mergeTransactions, filterByDateRange, filterByCustomRange } from '@/lib/engine/merger'
+import { categorizeTransactions } from '@/lib/engine/categorizer'
+import { detectAnomalies } from '@/lib/engine/anomaly'
+import { detectSubscriptions } from '@/lib/engine/subscriptions'
 import { validateFile } from '@/lib/security/fileValidator'
-
-// ─── Rate limiting (simple in-memory, swap for Upstash in prod) ───────────────
-const uploadRateMap = new Map<string, { count: number; resetAt: number }>()
-const UPLOAD_LIMIT = 10
-const WINDOW_MS = 60_000
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now()
-  const entry = uploadRateMap.get(userId)
-  if (!entry || now > entry.resetAt) {
-    uploadRateMap.set(userId, { count: 1, resetAt: now + WINDOW_MS })
-    return true
-  }
-  if (entry.count >= UPLOAD_LIMIT) return false
-  entry.count++
-  return true
-}
+import { uploadRateLimit } from '@/lib/security/rateLimit'
 
 export async function POST(request: NextRequest) {
+  const t0 = Date.now()
   try {
-    // ── Auth ────────────────────────────────────────────────────────────────
+    // 1. Verify JWT
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    if (!user || authError) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // ── Rate limit ──────────────────────────────────────────────────────────
-    if (!checkRateLimit(user.id)) {
+    // 2. Rate limit: 10 requests/minute
+    const rateLimit = uploadRateLimit(user.id)
+    if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: 'Too many uploads. Please wait a minute.' },
+        { error: 'Too many requests. Please wait a minute.' },
         { status: 429 }
       )
     }
 
-    // ── Parse form data ─────────────────────────────────────────────────────
+    // 3. Parse form data
     const formData = await request.formData()
     const files = formData.getAll('files') as File[]
-    const dateRangeParam = formData.get('dateRange') as string | null
-    const fromParam = formData.get('from') as string | null
-    const toParam = formData.get('to') as string | null
+    const rangeType = formData.get('rangeType') as string
+    const days = parseInt(formData.get('days') as string || '30')
+    const dateFrom = formData.get('dateFrom') as string
+    const dateTo = formData.get('dateTo') as string
+
+    console.log('[Upload] Files received:', files.map(f => `${f.name} (${f.size} bytes)`))
 
     if (!files || files.length === 0) {
-      return NextResponse.json({ error: 'No files provided.' }, { status: 400 })
+      return NextResponse.json({ error: 'No files provided' }, { status: 400 })
     }
 
-    if (files.length > 12) {
-      return NextResponse.json(
-        { error: 'Maximum 12 files allowed per upload.' },
-        { status: 400 }
-      )
-    }
-
-    // ── Validate all files first ────────────────────────────────────────────
+    // 4. Validate all files
     for (const file of files) {
       const validation = validateFile(file)
       if (!validation.valid) {
@@ -65,73 +49,120 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Parse each file ─────────────────────────────────────────────────────
-    const allParsed: Awaited<ReturnType<typeof parseStatement>>[] = []
-    const parseErrors: string[] = []
+    // 5. Parse all files
+    console.log('[Upload] Parsing files...')
+    let detectedFormat = 'Unknown'
+    const allParsed: any[] = []
 
     for (const file of files) {
-      try {
-        const transactions = await parseStatement(file, file.name)
-        allParsed.push(transactions)
-      } catch (err) {
-        parseErrors.push(`${file.name}: ${err instanceof Error ? err.message : 'Parse failed'}`)
+      console.log(`[Upload] Parsing: ${file.name}`)
+      const result = await parseStatement(file, file.name)
+      detectedFormat = result.detectedFormat
+      allParsed.push(result.transactions)
+      console.log(`[Upload] Parsed ${result.transactions.length} transactions from ${file.name} [Format: ${result.detectedFormat}]`)
+      if (result.transactions.length > 0) {
+        console.log('[Upload] Sample transaction:', result.transactions[0])
       }
     }
 
-    if (allParsed.length === 0) {
+    // 6. Merge + deduplicate
+    let transactions = mergeTransactions(allParsed)
+    console.log('[Upload] After merge:', transactions.length, 'transactions')
+
+    // 7. Filter by date range
+    if (rangeType === 'custom' && dateFrom && dateTo) {
+      transactions = filterByCustomRange(transactions, dateFrom, dateTo)
+    } else {
+      transactions = filterByDateRange(transactions, days)
+    }
+    console.log('[Upload] After date filter:', transactions.length, 'transactions')
+
+    if (transactions.length === 0) {
       return NextResponse.json(
-        { error: `Failed to parse files: ${parseErrors.join('; ')}` },
-        { status: 422 }
+        { error: 'No transactions found in the selected date range. Try a wider range.' },
+        { status: 400 }
       )
     }
 
-    // ── Merge + deduplicate ─────────────────────────────────────────────────
-    let merged = mergeTransactions(allParsed)
+    // 8. Run engines in parallel (FAST)
+    const categorized = categorizeTransactions(transactions)
+    const [withAnomalies, withSubscriptions] = await Promise.all([
+      Promise.resolve(detectAnomalies(categorized)),
+      Promise.resolve(detectSubscriptions(categorized))
+    ])
 
-    // ── Apply date filter ───────────────────────────────────────────────────
-    if (fromParam && toParam) {
-      merged = filterByCustomRange(merged, fromParam, toParam)
-    } else if (dateRangeParam && dateRangeParam !== 'all') {
-      const days = parseInt(dateRangeParam)
-      if (!isNaN(days)) merged = filterByDateRange(merged, days)
+    const processed = categorized.map((t, i) => ({
+      ...t,
+      is_anomaly: (withAnomalies[i] as { is_anomaly?: boolean })?.is_anomaly || false,
+      is_subscription: (withSubscriptions[i] as { is_subscription?: boolean })?.is_subscription || false
+    }))
+
+    console.log(`[Upload] Engines done: ${processed.filter(t => (t as any).is_anomaly).length} anomalies, ${processed.filter(t => (t as any).is_subscription).length} subscriptions`)
+
+    // 9. Delete existing transactions for this user
+    await supabase
+      .from('transactions')
+      .delete()
+      .eq('user_id', user.id)
+
+    // 10. Bulk insert in batches of 100
+    const batches = []
+    for (let i = 0; i < processed.length; i += 100) {
+      batches.push(processed.slice(i, i + 100))
     }
 
-    if (merged.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid transactions found in the selected date range.' },
-        { status: 422 }
-      )
-    }
-
-    // ── Save to Supabase (batches of 100) ───────────────────────────────────
-    const rows = merged.map((t) => ({ ...t, user_id: user.id }))
-    const BATCH_SIZE = 100
-
-    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = rows.slice(i, i + BATCH_SIZE)
+    for (const batch of batches) {
       const { error: insertError } = await supabase
         .from('transactions')
-        .upsert(batch, { onConflict: 'user_id,date,amount,description' })
+        .insert(
+          batch.map((t) => ({
+            user_id: user.id,
+            date: t.date,
+            description: t.description,
+            amount: t.amount,
+            type: t.type,
+            category: t.category,
+            is_anomaly: (t as { is_anomaly?: boolean }).is_anomaly ?? false,
+            is_subscription: (t as { is_subscription?: boolean }).is_subscription ?? false,
+            raw_text: t.raw_text,
+          }))
+        )
 
-      if (insertError) {
-        console.error('Insert error:', insertError)
-        // Continue with remaining batches even on partial failure
-      }
+      if (insertError) throw insertError
     }
 
-    const dateRange = getDateRange(merged)
+    console.log(`[Upload] Inserted ${processed.length} rows to Supabase`)
+
+    // 11. Invalidate insights cache
+    await supabase
+      .from('insights')
+      .delete()
+      .eq('user_id', user.id)
+
+    // 12. Return summary
+    const dateRange = {
+      from: processed[0]?.date,
+      to: processed[processed.length - 1]?.date,
+    }
+
+    const totalMs = Date.now() - t0
+    console.log(`[Upload] ✅ Done in ${totalMs}ms`)
 
     return NextResponse.json({
       success: true,
-      count: merged.length,
-      parseErrors: parseErrors.length > 0 ? parseErrors : undefined,
+      count: processed.length,
       dateRange,
-      preview: merged.slice(0, 5),
+      detectedFormat,
+      anomalies: processed.filter((t) => (t as { is_anomaly?: boolean }).is_anomaly).length,
+      subscriptions: processed.filter((t) => (t as { is_subscription?: boolean }).is_subscription).length,
+      categories: [...new Set(processed.map((t) => t.category))].length,
+      preview: processed.slice(0, 5),
+      processingMs: totalMs,
     })
-  } catch (err) {
-    console.error('Upload route error:', err)
+  } catch (error) {
+    console.error('[Upload] ❌ Error:', error)
     return NextResponse.json(
-      { error: 'Internal server error. Please try again.' },
+      { error: error instanceof Error ? error.message : 'Failed to process file. Please try again.' },
       { status: 500 }
     )
   }

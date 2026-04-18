@@ -26,8 +26,16 @@ export function filterByDateRange(
   transactions: Transaction[],
   days: number
 ): Transaction[] {
-  const cutoff = new Date()
+  if (transactions.length === 0) return []
+  
+  // Find the most recent transaction date in the uploaded data
+  const latestDateStr = transactions.reduce(
+    (max, t) => (t.date > max ? t.date : max),
+    transactions[0].date
+  )
+  const cutoff = new Date(latestDateStr)
   cutoff.setDate(cutoff.getDate() - days)
+
   return transactions.filter((t) => new Date(t.date) >= cutoff)
 }
 

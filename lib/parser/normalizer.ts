@@ -7,88 +7,173 @@ export interface Transaction {
   raw_text?: string
 }
 
+// ─── Month Map ────────────────────────────────────────────────────────────────
+const MONTHS: Record<string, string> = {
+  jan: '01', january: '01',
+  feb: '02', february: '02',
+  mar: '03', march: '03',
+  apr: '04', april: '04',
+  may: '05',
+  jun: '06', june: '06',
+  jul: '07', july: '07',
+  aug: '08', august: '08',
+  sep: '09', september: '09',
+  oct: '10', october: '10',
+  nov: '11', november: '11',
+  dec: '12', december: '12',
+}
+
 // ─── Date Normalizer ──────────────────────────────────────────────────────────
-export function normalizeDate(dateStr: string): string {
-  if (!dateStr) return ''
-  const s = dateStr.trim()
+export function normalizeDate(dateStr: string): string | null {
+  if (!dateStr?.trim()) return null
 
-  // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const str = dateStr.trim()
 
-  // DD/MM/YYYY or DD-MM-YYYY
-  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
-  if (dmy) {
-    const [, d, m, y] = dmy
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+  // Handle ISO timestamp (2025-04-01T12:34:56)
+  if (str.includes('T')) {
+    const d = new Date(str)
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]
   }
 
-  // MM/DD/YYYY (US format - only when month > 12 is impossible for DD)
-  const mdy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
-  if (mdy) {
-    const [, m, d, y] = mdy
-    if (parseInt(m) > 12) {
-      // must be DD/MM
-      return `${y}-${d.padStart(2, '0')}-${m.padStart(2, '0')}`
+  // Handle epoch timestamps (10 or 13 digits)
+  if (/^\d{10,13}$/.test(str)) {
+    const ts = parseInt(str)
+    const d = new Date(ts > 9999999999 ? ts : ts * 1000)
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]
+  }
+
+  // Ordered format patterns — most specific first
+  const formats: Array<{ r: RegExp; f: (m: RegExpMatchArray) => string }> = [
+    // YYYY-MM-DD (already ISO)
+    {
+      r: /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+      f: (m) => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`,
+    },
+    // YYYY/MM/DD
+    {
+      r: /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/,
+      f: (m) => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`,
+    },
+    // YYYY.MM.DD (Asian)
+    {
+      r: /^(\d{4})\.(\d{1,2})\.(\d{1,2})$/,
+      f: (m) => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`,
+    },
+    // DD/MM/YYYY (India, UK, AU)
+    {
+      r: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+      f: (m) => `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`,
+    },
+    // DD-MM-YYYY
+    {
+      r: /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+      f: (m) => `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`,
+    },
+    // DD.MM.YYYY (European)
+    {
+      r: /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/,
+      f: (m) => `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`,
+    },
+    // DD MMM YYYY  (01 Apr 2025)
+    {
+      r: /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/,
+      f: (m) =>
+        `${m[3]}-${MONTHS[m[2].toLowerCase()] || '01'}-${m[1].padStart(2, '0')}`,
+    },
+    // DD-MMM-YYYY  (01-Apr-2025)
+    {
+      r: /^(\d{1,2})-([A-Za-z]+)-(\d{4})$/,
+      f: (m) =>
+        `${m[3]}-${MONTHS[m[2].toLowerCase()] || '01'}-${m[1].padStart(2, '0')}`,
+    },
+    // MMM DD YYYY  (Apr 01 2025)
+    {
+      r: /^([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})$/,
+      f: (m) =>
+        `${m[3]}-${MONTHS[m[1].toLowerCase()] || '01'}-${m[2].padStart(2, '0')}`,
+    },
+    // DD/MM/YY
+    {
+      r: /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/,
+      f: (m) => `20${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`,
+    },
+    // DD MMM YY  (01 Apr 25)
+    {
+      r: /^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{2})$/,
+      f: (m) =>
+        `20${m[3]}-${MONTHS[m[2].toLowerCase()] || '01'}-${m[1].padStart(2, '0')}`,
+    },
+  ]
+
+  for (const { r, f } of formats) {
+    const match = str.match(r)
+    if (match) {
+      const result = f(match)
+      const d = new Date(result)
+      if (!isNaN(d.getTime()) && d.getFullYear() > 2000 && d.getFullYear() < 2100) {
+        return result
+      }
     }
   }
 
-  // DD MMM YYYY (e.g. 15 Jan 2024 or 15-Jan-2024)
-  const months: Record<string, string> = {
-    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
-  }
-  const dmy2 = s.match(/^(\d{1,2})[\s\-]([A-Za-z]{3})[\s\-](\d{4})$/)
-  if (dmy2) {
-    const [, d, mon, y] = dmy2
-    const m = months[mon.toLowerCase()]
-    if (m) return `${y}-${m}-${d.padStart(2, '0')}`
+  // Last resort: native Date
+  const fallback = new Date(dateStr)
+  if (!isNaN(fallback.getTime())) {
+    return fallback.toISOString().split('T')[0]
   }
 
-  // YYYY/MM/DD
-  const ymd = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})$/)
-  if (ymd) {
-    const [, y, m, d] = ymd
-    return `${y}-${m}-${d}`
-  }
-
-  // Fallback — try JS Date parse
-  const parsed = new Date(s)
-  if (!isNaN(parsed.getTime())) {
-    return parsed.toISOString().split('T')[0]
-  }
-
-  return s // return as-is if we can't parse
+  return null
 }
 
 // ─── Amount Normalizer ────────────────────────────────────────────────────────
-export function normalizeAmount(amount: string | number): number {
-  if (typeof amount === 'number') return Math.abs(amount)
-  let s = String(amount).trim()
-  // Remove currency symbols and whitespace
-  s = s.replace(/[₹$£€]/g, '').replace(/\bRs\.?\b/gi, '').trim()
-  // Remove parentheses (accounting notation for negatives)
-  s = s.replace(/[()]/g, '')
-  // Remove thousands-separator commas only (not the decimal point)
-  // e.g. "1,500.00" → "1500.00"  but  "1500.00" stays "1500.00"
-  s = s.replace(/,(?=\d{3}(?:[.,]|$))/g, '')
-  // Fallback: remove any remaining commas (e.g. European "1.500,00" → handle below)
-  s = s.replace(/,/g, '')
-  const num = parseFloat(s)
+export function normalizeAmount(val: string | number): number {
+  if (typeof val === 'number') return Math.abs(val)
+  if (!val?.trim()) return 0
+
+  let cleaned = val.trim()
+
+  // Remove all known currency symbols / codes
+  const symbols = [
+    '₹', '$', '€', '£', '¥', '₩', '₪', '₺', '₽',
+    'AED', 'SAR', 'SGD', 'MYR', 'AUD', 'CAD', 'CHF',
+    'HKD', 'INR', 'USD', 'EUR', 'GBP', 'JPY', 'KRW',
+    'CAD$', 'A$', 'NZ$', 'S$', 'HK$', 'RM', 'Rp',
+    'Rs.', 'Rs', 'US$',
+  ]
+  for (const sym of symbols) {
+    cleaned = cleaned.replace(
+      new RegExp(sym.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+      ''
+    )
+  }
+
+  cleaned = cleaned.trim()
+
+  // European format: 1.234,56 → 1234.56
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned)) {
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.')
+  } else {
+    // Standard: remove thousands commas
+    cleaned = cleaned.replace(/,/g, '')
+  }
+
+  // Remove parentheses (accounting negatives)
+  cleaned = cleaned.replace(/[()]/g, '').trim()
+
+  const num = parseFloat(cleaned)
   return isNaN(num) ? 0 : Math.abs(num)
 }
 
 // ─── Type Normalizer ──────────────────────────────────────────────────────────
-export function normalizeType(
-  type: string,
-  amount?: number
-): 'credit' | 'debit' {
+export function normalizeType(type: string, _amount?: number): 'credit' | 'debit' {
   const t = String(type).toLowerCase().trim()
 
-  if (['cr', 'credit', 'c', '+', 'deposit', 'received', 'in', 'inward'].some(k => t.includes(k))) return 'credit'
-  if (['dr', 'debit', 'd', '-', 'withdrawal', 'sent', 'out', 'outward', 'payment'].some(k => t.includes(k))) return 'debit'
+  const creditWords = ['cr', 'credit', 'deposit', 'received', 'in', 'inward', '+', 'refund', 'cashback', 'receipt', 'haben', 'money in']
+  const debitWords = ['dr', 'debit', 'db', 'withdrawal', 'sent', 'out', 'outward', '-', 'paid', 'payment', 'charge', 'soll', 'money out']
 
-  // Fallback on amount sign
-  if (amount !== undefined) return amount >= 0 ? 'credit' : 'debit'
+  if (creditWords.some((w) => t.includes(w))) return 'credit'
+  if (debitWords.some((w) => t.includes(w))) return 'debit'
+
   return 'debit'
 }
 

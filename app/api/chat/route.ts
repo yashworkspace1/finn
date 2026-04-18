@@ -1,71 +1,119 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/database/supabaseServer'
-import { chatRateLimit } from '@/lib/security/rateLimit'
-import { chatWithFallback } from '@/lib/ai/gemini'
-import { categorizeTransactions } from '@/lib/engine/categorizer'
+import { createAdminClient } from '@/lib/database/supabaseAdmin'
+import { chatWithGemini } from '@/lib/ai/gemini'
+import { generateFallbackChatResponse } from '@/lib/ai/fallback'
+import { checkRateLimit } from '@/lib/security/rateLimit'
+import { calculateHealthScore } from '@/lib/engine/scorer'
+import { getTotalIncome, getTotalExpenses, getSavingsRate, getTopCategories } from '@/lib/engine/stats'
 
-export async function POST(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    // ── Auth ────────────────────────────────────────────────────────────────
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // ── Rate limit ──────────────────────────────────────────────────────────
-    const { allowed } = chatRateLimit(user.id)
-    if (!allowed) return NextResponse.json({ error: 'Rate limit: 20 messages per minute.' }, { status: 429 })
+    const { data } = await supabase
+      .from('chat_history')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(20)
 
-    // ── Parse request body ──────────────────────────────────────────────────
-    const body = await request.json()
-    const message: string = body.message?.slice(0, 500) ?? ''
-    if (!message.trim()) return NextResponse.json({ error: 'Message is required.' }, { status: 400 })
+    return Response.json({ messages: data || [] })
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
+}
 
-    // ── Fetch transactions ──────────────────────────────────────────────────
-    const { data: rawTxns } = await supabase
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const rateLimit = checkRateLimit(`chat:${user.id}`, 20)
+    if (!rateLimit.allowed) {
+      return Response.json({ error: 'Too many messages. Wait a minute.' }, { status: 429 })
+    }
+
+    const { message } = await request.json()
+    if (!message?.trim()) {
+      return Response.json({ error: 'Message required' }, { status: 400 })
+    }
+
+    const adminSupabase = createAdminClient()
+    const { data: transactions } = await adminSupabase
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
-      .order('date', { ascending: true })
+      .order('date', { ascending: false })
+      .limit(10000)
 
-    const transactions = categorizeTransactions(rawTxns ?? [])
+    const txns = transactions || []
+    const health = calculateHealthScore(txns)
 
-    // ── Fetch last 10 chat messages for context ─────────────────────────────
-    const { data: historyRows } = await supabase
+    const context = {
+      totalIncome: getTotalIncome(txns),
+      totalExpenses: getTotalExpenses(txns),
+      savingsRate: getSavingsRate(txns),
+      topCategories: getTopCategories(txns, 5),
+      healthScore: health.score,
+      healthGrade: health.grade,
+      anomalyCount: txns.filter(t => t.is_anomaly).length,
+      subscriptionCount: txns.filter(t => t.is_subscription).length,
+      recentTransactions: txns.slice(0, 5)
+    }
+
+    const { data: history } = await supabase
       .from('chat_history')
       .select('role, message')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(6)
 
-    const history = (historyRows ?? []).reverse()
+    await supabase.from('chat_history').insert({
+      user_id: user.id,
+      role: 'user',
+      message: message.trim()
+    })
 
-    // ── Call Gemini (with fallback) ─────────────────────────────────────────
-    const reply = await chatWithFallback(message, transactions, history)
+    let response: string
+    try {
+      response = await chatWithGemini(message, context, (history || []).reverse())
+    } catch {
+      response = generateFallbackChatResponse(message, context)
+    }
 
-    // ── Save both messages to chat_history ──────────────────────────────────
-    await supabase.from('chat_history').insert([
-      { user_id: user.id, role: 'user',      message: message },
-      { user_id: user.id, role: 'assistant', message: reply   },
-    ])
+    await supabase.from('chat_history').insert({
+      user_id: user.id,
+      role: 'assistant',
+      message: response
+    })
 
-    return NextResponse.json({ success: true, reply })
-  } catch (err) {
-    console.error('Chat route error:', err)
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
+    return Response.json({ response })
+
+  } catch (error: any) {
+    console.error('Chat error:', error)
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// Clear chat history
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-    await supabase.from('chat_history').delete().eq('user_id', user.id)
-    return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error('Chat DELETE error:', err)
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
+    await supabase
+      .from('chat_history')
+      .delete()
+      .eq('user_id', user.id)
+
+    return Response.json({ success: true })
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

@@ -1,98 +1,100 @@
-export interface InsightItem {
-  title: string
-  description: string
-  type: 'positive' | 'warning' | 'danger' | 'info'
-  amount?: number
-}
-
-export interface GeminiInsights {
-  summary: string
-  insights: InsightItem[]
-  weeklyNudge: string
-  savingOpportunity: string
-}
-
-interface FallbackStats {
-  totalIncome: number
-  totalExpenses: number
-  savingsRate: number
-  topCategories: { category: string; amount: number; percentage: number }[]
-  anomalyCount: number
-  subscriptionCount?: number
-  healthScore: number
-  personality: string
-  transactionCount?: number
-}
-
-// ─── Rule-based fallback — output identical to Gemini ────────────────────────
-export function generateFallbackInsights(stats: FallbackStats): GeminiInsights {
-  const insights: InsightItem[] = []
-
+export function generateFallbackInsights(
+  stats: any
+): any {
+  const insights = []
+  
   // Savings insight
   if (stats.savingsRate < 10) {
     insights.push({
       title: 'Low savings rate detected',
-      description: `You saved only ${stats.savingsRate.toFixed(1)}% of your income. Experts recommend at least 20%. Try reducing ${stats.topCategories[0]?.category ?? 'top'} expenses first.`,
-      type: 'danger',
-      amount: Math.round(stats.totalIncome * 0.2),
+      description: `You saved only ${stats.savingsRate?.toFixed(1)}% of your income. Try to save at least 20%. Consider reducing ${stats.topCategories?.[0]?.category || 'top'} expenses by 15%.`,
+      type: 'danger'
     })
   } else if (stats.savingsRate >= 20) {
     insights.push({
-      title: 'Great savings rate!',
-      description: `You saved ${stats.savingsRate.toFixed(1)}% of your income — well above the 20% benchmark. Consider investing your surplus for compounding returns.`,
-      type: 'positive',
+      title: 'Excellent savings rate!',
+      description: `You saved ${stats.savingsRate?.toFixed(1)}% of income — better than most people. Consider investing your savings in mutual funds for better returns.`,
+      type: 'positive'
     })
   } else {
     insights.push({
-      title: 'Savings can improve',
-      description: `You saved ${stats.savingsRate.toFixed(1)}% this period. A small reduction in ${stats.topCategories[0]?.category ?? 'discretionary'} spending could push you above the 20% mark.`,
-      type: 'info',
+      title: 'Good savings progress',
+      description: `You saved ${stats.savingsRate?.toFixed(1)}% of income. You're on the right track. Aim for 20% to build a strong financial foundation.`,
+      type: 'info'
     })
   }
-
+  
   // Anomaly insight
   if (stats.anomalyCount > 0) {
     insights.push({
-      title: `${stats.anomalyCount} unusual transaction${stats.anomalyCount > 1 ? 's' : ''} flagged`,
-      description: `We detected ${stats.anomalyCount} transaction${stats.anomalyCount > 1 ? 's' : ''} significantly above your normal spending pattern. Review them in SpendLens to confirm they're legitimate.`,
-      type: 'warning',
+      title: `${stats.anomalyCount} unusual transaction${stats.anomalyCount > 1 ? 's' : ''} detected`,
+      description: `We found ${stats.anomalyCount} transactions significantly higher than your normal spending pattern. Review them in SpendLens.`,
+      type: 'warning'
     })
   }
-
-  // Subscription insight
-  if ((stats.subscriptionCount ?? 0) > 5) {
-    insights.push({
-      title: 'Subscription overload',
-      description: `You have ${stats.subscriptionCount ?? 0} recurring subscriptions. Even cancelling 2-3 unused ones could save ₹${((stats.subscriptionCount ?? 0) * 300).toLocaleString('en-IN')}+ per month.`,
-      type: 'warning',
-    })
-  }
-
+  
   // Top category insight
-  const top = stats.topCategories[0]
-  if (top && insights.length < 3) {
+  if (stats.topCategories?.[0]) {
+    const top = stats.topCategories[0]
     insights.push({
       title: `${top.category} is your biggest expense`,
-      description: `You spent ${top.percentage.toFixed(1)}% of your total expenses on ${top.category} (₹${top.amount.toLocaleString('en-IN')}). ${top.percentage > 30 ? 'This is above average — consider setting a monthly cap.' : 'This looks reasonable for your income level.'}`,
-      type: top.percentage > 30 ? 'warning' : 'info',
-      amount: top.amount,
+      description: `You spent ₹${top.amount?.toLocaleString('en-IN')} (${top.percentage?.toFixed(1)}%) on ${top.category}. ${top.percentage > 30 ? 'This is high — consider setting a budget.' : 'This looks reasonable.'}`,
+      type: top.percentage > 30 ? 'warning' : 'info'
+    })
+  }
+  
+  // Subscription insight
+  if (stats.subscriptionCount > 5) {
+    insights.push({
+      title: 'Too many subscriptions',
+      description: `You have ${stats.subscriptionCount} active subscriptions. Cancel unused ones to save money every month.`,
+      type: 'warning'
     })
   }
 
-  const saved = Math.round(stats.totalIncome * stats.savingsRate / 100)
-  const summary = `Your financial health score is ${stats.healthScore}/100 (${stats.healthScore >= 70 ? 'good' : stats.healthScore >= 40 ? 'average' : 'needs improvement'}). You saved ₹${saved.toLocaleString('en-IN')} (${stats.savingsRate.toFixed(1)}%) across ${stats.transactionCount ?? 0} transactions. ${stats.healthScore >= 70 ? 'Keep building on this momentum.' : 'Focus on reducing your top expense categories to improve your score.'}`
-
-  const weeklyNudge =
-    stats.savingsRate < 20
-      ? `This week, cut ${top?.category ?? 'dining'} by 20% — that alone could save ₹${Math.round((top?.amount ?? 0) * 0.2).toLocaleString('en-IN')} this month.`
-      : `You're saving well! This week, explore a SIP or index fund to put your ₹${saved.toLocaleString('en-IN')} savings to work.`
-
-  const savingOpportunity = `Trimming ${top?.category ?? 'top'} expenses by 15% would free up ₹${Math.round((top?.amount ?? 0) * 0.15).toLocaleString('en-IN')} per month — enough to boost your health score by 5-10 points.`
+  const referenceIncome = stats.monthlyIncome || stats.totalIncome || 0
+  const savingsAmount = Math.round(referenceIncome * (stats.savingsRate || 0) / 100)
 
   return {
-    summary,
+    summary: `Your financial health score is ${stats.healthScore}/100. You analyzed ${stats.transactionCount} transactions with a ${stats.savingsRate?.toFixed(1)}% savings rate. ${stats.healthScore >= 70 ? 'Keep up the great work!' : 'Focus on reducing top expenses.'}`,
     insights: insights.slice(0, 3),
-    weeklyNudge,
-    savingOpportunity,
+    weeklyNudge: stats.savingsRate < 20
+      ? `This week, reduce ${stats.topCategories?.[0]?.category || 'top'} spending by 20%. Could save you ₹${Math.round((stats.topCategories?.[0]?.amount || 0) * 0.2).toLocaleString('en-IN')} this month.`
+      : `Great job saving ₹${savingsAmount.toLocaleString('en-IN')}! Consider investing it in index funds for long-term wealth building.`,
+    savingOpportunity: `Reducing ${stats.topCategories?.[0]?.category || 'top'} expenses by 15% could save ₹${Math.round((stats.topCategories?.[0]?.amount || 0) * 0.15).toLocaleString('en-IN')} per month.`
   }
+}
+
+export function generateFallbackChatResponse(
+  message: string,
+  context: any
+): string {
+  const msg = message.toLowerCase()
+  
+  if (msg.includes('spend') || msg.includes('most')) {
+    const top = context.topCategories?.[0]
+    return top 
+      ? `Your biggest expense category is ${top.category} at ₹${top.amount?.toLocaleString('en-IN')} (${top.percentage?.toFixed(1)}% of total spending). Consider setting a monthly budget for this category.`
+      : `Upload your bank statement first and I'll analyze your spending patterns!`
+  }
+  
+  if (msg.includes('sav')) {
+    return `Your current savings rate is ${context.savingsRate?.toFixed(1)}%. ${context.savingsRate >= 20 ? `Great job! You saved ₹${Math.round(context.totalIncome * context.savingsRate / 100).toLocaleString('en-IN')} this period.` : `Try to reach 20% savings rate. Reduce your top expense category to get there.`}`
+  }
+  
+  if (msg.includes('health') || msg.includes('score')) {
+    return `Your financial health score is ${context.healthScore}/100. ${context.healthScore >= 70 ? 'This is excellent! Keep maintaining your spending discipline.' : context.healthScore >= 40 ? 'This is average. Focus on increasing your savings rate to improve.' : 'This needs attention. Start by reducing your top expense category.'}`
+  }
+  
+  if (msg.includes('unusual') || msg.includes('anomal')) {
+    return context.anomalyCount > 0
+      ? `I found ${context.anomalyCount} unusual transactions in your data. Check the SpendLens page for details on which transactions are flagged.`
+      : `No unusual transactions detected! Your spending patterns look consistent.`
+  }
+  
+  if (msg.includes('subscri')) {
+    return `You have ${context.subscriptionCount} active subscriptions detected. Review them in SpendLens to find ones you might not be using anymore.`
+  }
+  
+  return `Based on your financial data: income ₹${context.totalIncome?.toLocaleString('en-IN')}, expenses ₹${context.totalExpenses?.toLocaleString('en-IN')}, savings rate ${context.savingsRate?.toFixed(1)}%. Your health score is ${context.healthScore}/100. Ask me anything specific about your finances!`
 }
