@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { formatINR } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import {
   BarChart, Bar, LineChart, Line,
@@ -43,9 +44,9 @@ export default function ReportsPage() {
   const visibleCategories = showAllCategories ? report.topCategories : report.topCategories?.slice(0, 8)
 
   const scoreCards = [
-    { label: 'Total Income', value: `₹${report.income.total.toLocaleString('en-IN')}`, color: 'text-emerald-500', icon: '💰' },
-    { label: 'Total Expenses', value: `₹${report.expenses.total.toLocaleString('en-IN')}`, color: 'text-rose-500', icon: '💸' },
-    { label: 'Net Savings', value: `₹${Math.abs(netSavings).toLocaleString('en-IN')}`, color: netSavings >= 0 ? 'text-violet-500' : 'text-red-500', icon: netSavings >= 0 ? '🏆' : '⚠️' },
+    { label: 'Total Income', value: formatINR(report.income.total), color: 'text-emerald-500', icon: '💰' },
+    { label: 'Total Expenses', value: formatINR(report.expenses.total), color: 'text-rose-500', icon: '💸' },
+    { label: 'Net Savings', value: formatINR(Math.abs(netSavings)), color: netSavings >= 0 ? 'text-violet-500' : 'text-red-500', icon: netSavings >= 0 ? '🏆' : '⚠️' },
     { label: 'Savings Rate', value: `${report.savings.rate.toFixed(1)}%`, color: report.savings.rate >= 20 ? 'text-emerald-500' : report.savings.rate >= 10 ? 'text-amber-500' : 'text-rose-500', icon: '📊' },
     { label: 'Anomalies', value: `${report.anomalies.count} found`, color: report.anomalies.count > 0 ? 'text-red-500' : 'text-emerald-500', icon: '🔍' },
     { label: 'Subscriptions', value: `${report.subscriptions.count} active`, color: 'text-amber-500', icon: '🔄' },
@@ -98,7 +99,7 @@ export default function ReportsPage() {
               <BarChart data={report.monthlyTrend} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(val: any) => `₹${Number(val).toLocaleString('en-IN')}`} />
+                <Tooltip formatter={(val: any) => formatINR(Number(val))} />
                 <Legend />
                 <Bar dataKey="income" fill={CHART_COLORS.secondary} name="Income" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expenses" fill={CHART_COLORS.danger} name="Expenses" radius={[4, 4, 0, 0]} />
@@ -116,7 +117,7 @@ export default function ReportsPage() {
             <div key={cat.category}>
               <div className="flex justify-between text-sm mb-1">
                 <span className="font-medium">{cat.category}</span>
-                <span className="text-muted-foreground">₹{cat.amount.toLocaleString('en-IN')}</span>
+                <span className="text-muted-foreground">{formatINR(cat.amount)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">

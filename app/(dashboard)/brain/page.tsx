@@ -8,7 +8,7 @@ import {
   ChevronRight, Star, Info, Eye, TrendingUp as TrendingUpIcon, MessageCircle, FileText
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatINR } from '@/lib/utils'
 
 // BackButton component since it's used in other pages
 function BackButton({ href }: { href: string }) {
@@ -174,13 +174,13 @@ export default function BrainPage() {
                   {[
                     {
                       label: 'Total Income',
-                      value: `₹${(data.stats?.totalIncome || 0).toLocaleString('en-IN')}`,
+                      value: formatINR(data.stats?.totalIncome || 0),
                       icon: TrendingUp,
                       color: 'emerald'
                     },
                     {
                       label: 'Total Expenses',
-                      value: `₹${(data.stats?.totalExpenses || 0).toLocaleString('en-IN')}`,
+                      value: formatINR(data.stats?.totalExpenses || 0),
                       icon: TrendingDown,
                       color: 'rose'
                     },
@@ -251,7 +251,7 @@ export default function BrainPage() {
                         <span className="text-sm font-medium">{cat.category}</span>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-muted-foreground">{cat.percentage?.toFixed(1)}%</span>
-                          <span className="text-sm font-semibold">₹{cat.amount?.toLocaleString('en-IN')}</span>
+                          <span className="text-sm font-semibold">{formatINR(cat.amount || 0)}</span>
                         </div>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -398,7 +398,7 @@ export default function BrainPage() {
                         <span className={`inline-block mt-2 text-xs font-medium px-2.5 py-1 rounded-full ${
                           insight.type === 'positive' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
                         }`}>
-                          ₹{insight.amount?.toLocaleString('en-IN')}
+                          {formatINR(insight.amount || 0)}
                         </span>
                       )}
                     </div>

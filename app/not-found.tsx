@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">
@@ -8,18 +10,18 @@ export default function NotFound() {
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
         <div className="flex items-center justify-center gap-3">
-          <a
+          <Link
             href="/dashboard"
             className="px-6 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors font-medium"
           >
             Go to Dashboard
-          </a>
-          <a
+          </Link>
+          <Link
             href="/"
             className="px-6 py-3 bg-card border border-border rounded-xl hover:bg-muted transition-colors font-medium text-sm"
           >
             Home
-          </a>
+          </Link>
         </div>
       </div>
     </div>

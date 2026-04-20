@@ -13,6 +13,7 @@ import CountUp from 'react-countup'
 import { useInsights } from '@/hooks/useData'
 import { HealthScore } from '@/components/dashboard/HealthScore'
 import { SkeletonCard, SkeletonChart } from '@/components/common/Loader'
+import { formatINR } from '@/lib/utils'
 import { CATEGORY_COLORS, HEALTH_SCORE_COLOR } from '@/utils/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -80,8 +81,36 @@ const INSIGHT_BORDER: Record<string, string> = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter()
-  const { data, loading, error } = useInsights()
+  const { data, loading, error, refetch } = useInsights()
   const [nudgeDismissed, setNudgeDismissed] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [timeAgo, setTimeAgo] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Update the 'X ago' label every 30 seconds
+  useEffect(() => {
+    if (!lastUpdated) return
+    function update() {
+      const secs = Math.floor((Date.now() - lastUpdated!.getTime()) / 1000)
+      if (secs < 60) setTimeAgo(`${secs}s ago`)
+      else if (secs < 3600) setTimeAgo(`${Math.floor(secs / 60)}m ago`)
+      else setTimeAgo(`${Math.floor(secs / 3600)}h ago`)
+    }
+    update()
+    const interval = setInterval(update, 30_000)
+    return () => clearInterval(interval)
+  }, [lastUpdated])
+
+  // Record when fresh data arrives
+  useEffect(() => {
+    if (data && !loading) setLastUpdated(new Date())
+  }, [data, loading])
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    await refetch()
+    setRefreshing(false)
+  }
 
   useEffect(() => {
     if (localStorage.getItem('finn-nudge-dismissed') === 'true') {
@@ -147,11 +176,29 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Dashboard Top Right Action */}
-      <div className="flex justify-end">
+      {/* Dashboard Top Bar */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {lastUpdated && (
+            <>
+              <span>Updated {timeAgo}</span>
+              <span>·</span>
+            </>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1 text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50"
+          >
+            <svg className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
         <button
           onClick={() => router.push('/onboarding')}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-violet-500/50 rounded-lg transition-all duration-200"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-violet-500/50 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
         >
           <Upload className="w-3 h-3"/>
           Re-upload
@@ -274,7 +321,7 @@ export default function DashboardPage() {
                           <p className="text-xs text-muted-foreground mt-0.5">{insight.description}</p>
                           {insight.amount && (
                             <Badge variant="secondary" className="mt-2 text-xs">
-                              ₹{insight.amount.toLocaleString('en-IN')}
+                              {formatINR(insight.amount)}
                             </Badge>
                           )}
                         </div>
@@ -348,7 +395,7 @@ export default function DashboardPage() {
                 <div key={cat.category}>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="font-medium">{cat.category}</span>
-                    <span className="text-muted-foreground">₹{cat.amount.toLocaleString('en-IN')}</span>
+                    <span className="text-muted-foreground">{formatINR(cat.amount)}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                     <motion.div

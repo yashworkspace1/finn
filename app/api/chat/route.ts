@@ -58,12 +58,17 @@ export async function POST(request: Request) {
       totalIncome: getTotalIncome(txns),
       totalExpenses: getTotalExpenses(txns),
       savingsRate: getSavingsRate(txns),
-      topCategories: getTopCategories(txns, 5),
+      topCategories: getTopCategories(txns, 10),
       healthScore: health.score,
       healthGrade: health.grade,
       anomalyCount: txns.filter(t => t.is_anomaly).length,
       subscriptionCount: txns.filter(t => t.is_subscription).length,
-      recentTransactions: txns.slice(0, 5)
+      recentTransactions: txns.slice(0, 10),
+      transactionCount: txns.length,
+      dateRange: {
+        from: txns[txns.length - 1]?.date,
+        to: txns[0]?.date,
+      },
     }
 
     const { data: history } = await supabase

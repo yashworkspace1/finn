@@ -21,6 +21,15 @@ export const metadata: Metadata = {
   description:
     'FINN is an AI-powered financial intelligence platform that auto-categorizes transactions, predicts cash flow, and gives you personalized financial insights.',
   keywords: ['finance', 'AI', 'budgeting', 'cash flow', 'financial analytics'],
+  openGraph: {
+    title: 'FINN — Your Personal CFO',
+    description: 'AI-powered financial intelligence. Upload your bank statement and get instant insights.',
+    type: 'website',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({
@@ -44,7 +53,23 @@ export default function RootLayout({
           <AuthProvider>
             <TooltipProvider>
               {children}
-              <Toaster richColors position="top-right" />
+              <Toaster
+                richColors
+                position="top-center"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: 'hsl(var(--card))',
+                    color: 'hsl(var(--foreground))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    padding: '10px 14px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  },
+                }}
+              />
             </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>

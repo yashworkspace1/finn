@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { TrendingUp, AlertTriangle, CheckCircle, Info } from 'lucide-react'
 import { BackButton } from '@/components/common/BackButton'
+import { formatINR } from '@/lib/utils'
 
 const AreaChart = dynamic(
   () => import('recharts').then(m => ({ default: m.AreaChart })), { ssr: false }
@@ -82,18 +83,18 @@ export default function CashFlowPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card border rounded-xl p-4">
           <p className="text-sm text-muted-foreground">Predicted Income</p>
-          <p className="text-2xl font-bold text-teal-400 mt-1">₹{Math.round(predictedIncome).toLocaleString('en-IN')}</p>
+          <p className="text-2xl font-bold text-teal-400 mt-1">{formatINR(predictedIncome)}</p>
           <p className="text-xs text-muted-foreground mt-1">Next 30 days</p>
         </div>
         <div className="bg-card border rounded-xl p-4">
           <p className="text-sm text-muted-foreground">Predicted Expenses</p>
-          <p className="text-2xl font-bold text-rose-400 mt-1">₹{Math.round(predictedExpenses).toLocaleString('en-IN')}</p>
+          <p className="text-2xl font-bold text-rose-400 mt-1">{formatINR(predictedExpenses)}</p>
           <p className="text-xs text-muted-foreground mt-1">Next 30 days</p>
         </div>
         <div className="bg-card border rounded-xl p-4">
           <p className="text-sm text-muted-foreground">Predicted Balance</p>
           <p className={`text-2xl font-bold mt-1 ${predictedBalance >= 0 ? 'text-violet-400' : 'text-red-400'}`}>
-            ₹{Math.round(Math.abs(predictedBalance)).toLocaleString('en-IN')}
+            {formatINR(Math.abs(predictedBalance))}
           </p>
           <p className="text-xs text-muted-foreground mt-1">{predictedBalance >= 0 ? 'Surplus' : 'Deficit'}</p>
         </div>
@@ -116,7 +117,7 @@ export default function CashFlowPage() {
               </defs>
               <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={v => v.slice(5)} />
               <YAxis tick={{ fontSize: 10 }}/>
-              <Tooltip formatter={(val: any, name: any) => [`₹${Number(val).toLocaleString('en-IN')}`, name]} />
+              <Tooltip formatter={(val: any, name: any) => [formatINR(Number(val)), name]} />
               <Area type="monotone" dataKey="income" stroke="#2dd4bf" fill="url(#incomeGrad)" name="Income" strokeWidth={2} />
               <Area type="monotone" dataKey="expenses" stroke="#8b5cf6" fill="url(#expenseGrad)" name="Expenses" strokeWidth={2} />
             </AreaChart>
@@ -135,7 +136,7 @@ export default function CashFlowPage() {
                 {alert.type === 'danger' ? <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0"/> : alert.type === 'warning' ? <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0"/> : <Info className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0"/>}
                 <div>
                   <p className="text-sm font-medium">{alert.message}</p>
-                  {alert.amount && <p className="text-xs text-muted-foreground mt-0.5">Amount: ₹{alert.amount.toLocaleString('en-IN')}</p>}
+                  {alert.amount && <p className="text-xs text-muted-foreground mt-0.5">Amount: {formatINR(alert.amount)}</p>}
                 </div>
               </div>
             ))}
@@ -148,7 +149,7 @@ export default function CashFlowPage() {
         <div className="flex items-center gap-4">
           <div>
             <p className="text-3xl font-bold text-violet-400">
-              ₹{Math.max(0, Math.round(predictedIncome - predictedExpenses)).toLocaleString('en-IN')}
+              {formatINR(Math.max(0, predictedIncome - predictedExpenses))}
             </p>
             <p className="text-sm text-muted-foreground mt-1">Estimated savings this month</p>
           </div>

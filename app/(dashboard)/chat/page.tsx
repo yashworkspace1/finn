@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { BackButton } from '@/components/common/BackButton'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Message {
   id: string
@@ -15,10 +17,12 @@ interface Message {
 }
 
 const SUGGESTED = [
-  "Where did I spend the most? 💸",
-  "Am I saving enough? 🏦",
-  "Any unusual transactions? 🔍",
-  "What's my financial health? 💪",
+  "Where did I spend the most this month? 💸",
+  "Am I saving enough for my income? 🏦",
+  "What subscriptions can I cancel? 🔄",
+  "Should I start investing? 📈",
+  "How can I improve my financial health? 💪",
+  "Explain my spending personality 🧠",
 ]
 
 export default function FinChatPage() {
@@ -37,8 +41,8 @@ export default function FinChatPage() {
           const data = await res.json()
           setMessages(data.messages || [])
         }
-      } catch (err) {
-        console.error('Failed to load history:', err)
+      } catch {
+        // silent
       } finally {
         setLoadingHistory(false)
       }
@@ -59,7 +63,7 @@ export default function FinChatPage() {
       id: Date.now().toString(),
       role: 'user',
       message: messageText,
-      createdAt: new Date()
+      createdAt: new Date(),
     }
 
     setMessages(prev => [...prev, userMessage])
@@ -70,7 +74,7 @@ export default function FinChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText })
+        body: JSON.stringify({ message: messageText }),
       })
 
       if (!res.ok) throw new Error('Chat failed')
@@ -80,12 +84,12 @@ export default function FinChatPage() {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         message: data.response || "I'm having trouble right now. Try again!",
-        createdAt: new Date()
+        createdAt: new Date(),
       }
 
       setMessages(prev => [...prev, assistantMessage])
-    } catch (err) {
-      toast.error('FINN is unavailable. Try again.')
+    } catch {
+      toast.error('FINN is thinking — try again in a moment.')
       setMessages(prev => prev.filter(m => m.id !== userMessage.id))
     } finally {
       setLoading(false)
@@ -99,7 +103,7 @@ export default function FinChatPage() {
         setMessages([])
         toast.success('Chat history cleared')
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to clear chat')
     }
   }
@@ -115,11 +119,16 @@ export default function FinChatPage() {
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card"/>
           </div>
           <div>
-            <p className="font-semibold">FINN</p>
-            <p className="text-xs text-muted-foreground">Your Financial Advisor</p>
+            <p className="font-semibold tracking-tight">FINN</p>
+            <p className="text-xs text-muted-foreground">Your AI Financial Advisor</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={clearChat}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={clearChat}
+          className="transition-all duration-200 hover:scale-[1.05] active:scale-[0.95] hover:text-destructive"
+        >
           <Trash2 className="w-4 h-4"/>
         </Button>
       </div>
@@ -138,18 +147,24 @@ export default function FinChatPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center py-12 space-y-6"
           >
-            <div className="w-16 h-16 rounded-full bg-violet-600/20 flex items-center justify-center">
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-16 h-16 rounded-full bg-violet-600/20 flex items-center justify-center"
+            >
               <MessageCircle className="w-8 h-8 text-violet-500"/>
-            </div>
+            </motion.div>
             <div className="text-center">
-              <h3 className="font-semibold text-lg">Hi! I'm FINN 👋</h3>
+              <h3 className="font-semibold text-lg tracking-tight">Hi! I&apos;m FINN 👋</h3>
               <p className="text-muted-foreground text-sm mt-1">Ask me anything about your finances</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
               {SUGGESTED.map(q => (
-                <button key={q}
+                <button
+                  key={q}
                   onClick={() => handleSend(q)}
-                  className="p-3 text-sm text-left bg-card border rounded-xl hover:border-violet-500 hover:bg-violet-500/5 transition-all duration-200">
+                  className="p-3 text-sm text-left bg-card border rounded-xl hover:border-violet-500/60 hover:bg-violet-500/5 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+                >
                   {q}
                 </button>
               ))}
@@ -163,16 +178,29 @@ export default function FinChatPage() {
               key={msg.id}
               initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
               animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2 }}
               className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' && (
                 <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">F</div>
               )}
-              <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === 'user' ? 'bg-violet-600 text-white rounded-tr-sm' : 'bg-card border rounded-tl-sm'
-                }`}>
-                {msg.message}
-                <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-violet-200' : 'text-muted-foreground'}`}>
+              <div
+                className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-violet-600 text-white rounded-tr-sm'
+                    : 'bg-card border rounded-tl-sm'
+                }`}
+              >
+                {msg.role === 'assistant' ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-p:leading-relaxed prose-strong:text-violet-400 dark:prose-strong:text-violet-300 prose-ul:my-1 prose-li:my-0.5 prose-headings:text-sm">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.message}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <span>{msg.message}</span>
+                )}
+                <p className={`text-[10px] mt-1.5 ${msg.role === 'user' ? 'text-violet-200' : 'text-muted-foreground'}`}>
                   {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -185,8 +213,13 @@ export default function FinChatPage() {
             <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">F</div>
             <div className="bg-card border rounded-2xl rounded-tl-sm px-4 py-3">
               <div className="flex gap-1 items-center">
-                {[0,1,2].map(i => (
-                  <motion.div key={i} animate={{ y: [0, -4, 0] }} transition={{ delay: i * 0.15, repeat: Infinity, duration: 0.6 }} className="w-2 h-2 bg-muted-foreground rounded-full" />
+                {[0, 1, 2].map(i => (
+                  <motion.div
+                    key={i}
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ delay: i * 0.15, repeat: Infinity, duration: 0.6 }}
+                    className="w-2 h-2 bg-muted-foreground rounded-full"
+                  />
                 ))}
               </div>
             </div>
@@ -201,13 +234,17 @@ export default function FinChatPage() {
           <Input
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
             placeholder="Ask FINN anything about your finances..."
             disabled={loading}
-            className="flex-1 h-11 bg-background"
+            className="flex-1 h-11 bg-background focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all duration-200"
             maxLength={500}
           />
-          <Button onClick={() => handleSend()} disabled={loading || !input.trim()} className="h-11 w-11 bg-violet-600 hover:bg-violet-700 p-0 shadow-lg">
+          <Button
+            onClick={() => handleSend()}
+            disabled={loading || !input.trim()}
+            className="h-11 w-11 bg-violet-600 hover:bg-violet-700 p-0 shadow-lg transition-all duration-200 hover:scale-[1.05] active:scale-[0.95]"
+          >
             <Send className="w-4 h-4 text-white"/>
           </Button>
         </div>

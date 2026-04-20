@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { Eye, CheckCircle } from 'lucide-react'
 import { BackButton } from '@/components/common/BackButton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { formatINR } from '@/lib/utils'
 
 // Import Recharts with no SSR
 const PieChart = dynamic(
@@ -120,7 +121,7 @@ export default function SpendLensPage() {
           </div>
         </div>
         
-        <Select value={timeFilter} onValueChange={setTimeFilter}>
+        <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v ?? 'all')}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select timeframe" />
           </SelectTrigger>
@@ -168,7 +169,7 @@ export default function SpendLensPage() {
                   paddingAngle={3}
                   dataKey="amount"
                 />
-                <Tooltip formatter={(val: any) => `₹${Number(val).toLocaleString('en-IN')}`} />
+                <Tooltip formatter={(val: any) => formatINR(Number(val))} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -179,7 +180,7 @@ export default function SpendLensPage() {
                   <div className="w-3 h-3 rounded-full" style={{ background: CATEGORY_COLORS[cat.category] || CHART_COLORS.primary }} />
                   <span className="text-sm">{cat.category}</span>
                 </div>
-                <span className="text-sm font-medium">₹{cat.amount.toLocaleString('en-IN')}</span>
+                <span className="text-sm font-medium">{formatINR(cat.amount)}</span>
               </div>
             ))}
           </div>
@@ -202,7 +203,7 @@ export default function SpendLensPage() {
                   }}
                 />
                 <YAxis hide />
-                <Tooltip formatter={(val: any) => `₹${Number(val).toLocaleString('en-IN')}`} />
+                <Tooltip formatter={(val: any) => formatINR(Number(val))} />
                 <Bar dataKey="amount" radius={[4,4,0,0]} name="Spent">
                   {dailyData.map((entry: any, index: number) => (
                     <Cell 
@@ -239,7 +240,7 @@ export default function SpendLensPage() {
                   <p className="font-medium text-sm">{t.description}</p>
                   <p className="text-xs text-muted-foreground">{t.date} · {t.category}</p>
                 </div>
-                <span className="text-red-400 font-semibold">₹{t.amount.toLocaleString('en-IN')}</span>
+                <span className="text-red-400 font-semibold">{formatINR(t.amount)}</span>
               </div>
             ))}
             {anomalies.length > 5 && (
@@ -258,7 +259,7 @@ export default function SpendLensPage() {
         <h2 className="font-semibold mb-4">
           Active Subscriptions
           <span className="ml-2 text-sm font-normal text-muted-foreground">
-            ₹{subscriptions.reduce((s, t) => s + t.amount, 0).toLocaleString('en-IN')}/mo total
+            {formatINR(subscriptions.reduce((s, t) => s + t.amount, 0))}/mo total
           </span>
         </h2>
         {subscriptions.length === 0 ? (
@@ -268,7 +269,7 @@ export default function SpendLensPage() {
             {subscriptions.map((t: any) => (
               <div key={t.id} className="p-3 bg-background border rounded-lg">
                 <p className="font-medium text-sm truncate">{t.description}</p>
-                <p className="text-violet-400 font-semibold text-sm mt-1">₹{t.amount.toLocaleString('en-IN')}</p>
+                <p className="text-violet-400 font-semibold text-sm mt-1">{formatINR(t.amount)}</p>
                 <p className="text-xs text-muted-foreground">{t.date}</p>
               </div>
             ))}
@@ -369,5 +370,5 @@ function getDailySpend(transactions: any[]) {
 }
 
 function formatCurrency(amount: number): string {
-  return `₹${amount.toLocaleString('en-IN')}`
+  return formatINR(amount)
 }
