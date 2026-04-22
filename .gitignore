@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# junk
+nanonets-debug.json
+nanonets-debug.log
+test-nanonets.js
+test.pdf
+.vscode/
