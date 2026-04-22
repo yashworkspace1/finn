@@ -33,28 +33,53 @@ function predictCashFlow(transactions: Transaction[]) {
   const chartData = []
   let runningBalance = 0
   
-  // Backfill actuals
-  const today = new Date()
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(today)
-    d.setDate(d.getDate() - i)
+  // Group transactions by date for fast lookup - normalize to YYYY-MM-DD
+  const txByDate = new Map<string, { credit: number, debit: number }>()
+  transactions.forEach(t => {
+    // Robust date extraction (YYYY-MM-DD)
+    const dateObj = new Date(t.date)
+    if (isNaN(dateObj.getTime())) return
+    const dStr = dateObj.toISOString().split('T')[0]
+    
+    const current = txByDate.get(dStr) || { credit: 0, debit: 0 }
+    if (t.type === 'credit') current.credit += t.amount
+    else current.debit += t.amount
+    txByDate.set(dStr, current)
+  })
+
+  // Backfill actuals - use all available dates or last 365 days
+  const now = new Date()
+  const todayStr = now.toISOString().split('T')[0]
+  const today = new Date(todayStr) // Localized today at midnight UTC
+  
+  const sortedDates = [...txByDate.keys()].sort()
+  const startDateStr = sortedDates.length > 0 ? sortedDates[0] : todayStr
+  const startDate = new Date(startDateStr)
+  
+  const diffTime = Math.abs(today.getTime() - startDate.getTime())
+  const historyDays = Math.min(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 365)
+
+  for (let i = historyDays; i >= 0; i--) {
+    const d = new Date(startDate)
+    d.setDate(d.getDate() + (historyDays - i))
     const dateStr = d.toISOString().split('T')[0]
     
-    const dayDebits = debits.filter(t => t.date === dateStr).reduce((s, t) => s + t.amount, 0)
-    const dayCredits = credits.filter(t => t.date === dateStr).reduce((s, t) => s + t.amount, 0)
+    const dayData = txByDate.get(dateStr) || { credit: 0, debit: 0 }
     
-    runningBalance += (dayCredits - dayDebits)
+    runningBalance += (dayData.credit - dayData.debit)
     
     chartData.push({
-      date: dateStr.slice(5),
+      date: dateStr.slice(5), // MM-DD
       balance: runningBalance,
+      income: dayData.credit,
+      expenses: dayData.debit,
       predicted: null
     })
   }
   
-  // Forecast
+  // Forecast - Next 90 days
   let forecastBalance = runningBalance
-  for (let i = 1; i <= 30; i++) {
+  for (let i = 1; i <= 90; i++) {
     const d = new Date(today)
     d.setDate(d.getDate() + i)
     const dateStr = d.toISOString().split('T')[0]
@@ -64,6 +89,8 @@ function predictCashFlow(transactions: Transaction[]) {
     chartData.push({
       date: dateStr.slice(5),
       balance: null,
+      income: dailyIncome,
+      expenses: dailySpend,
       predicted: forecastBalance
     })
   }

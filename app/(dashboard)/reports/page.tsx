@@ -5,184 +5,279 @@ import { formatINR } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import {
   BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
+  CartesianGrid
 } from 'recharts'
-import { FileText, Download, Share2, Trophy, AlertTriangle, CreditCard, RefreshCw } from 'lucide-react'
+import { 
+  FileText, Download, Share2, Trophy, 
+  AlertTriangle, CreditCard, RefreshCw,
+  TrendingUp, TrendingDown, Target, Zap,
+  ArrowUpRight
+} from 'lucide-react'
 import { useReports } from '@/hooks/useData'
-import { SkeletonCard, SkeletonChart } from '@/components/common/Loader'
-import { CATEGORY_COLORS, CHART_COLORS, HEALTH_SCORE_COLOR } from '@/utils/constants'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { BackButton } from '@/components/common/BackButton'
+
+const formatINRShort = (n: number) => {
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`
+  if (n >= 1000) return `₹${(n / 1000).toFixed(0)}k`
+  return `₹${n}`
+}
 
 export default function ReportsPage() {
   const { data, loading } = useReports()
   const [showAllCategories, setShowAllCategories] = useState(false)
 
-  if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}</div>
-        <SkeletonChart />
-        <SkeletonChart />
-      </div>
-    )
-  }
+  if (loading) return <ReportSkeleton />
 
   const report = data?.report
   if (!report) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <FileText size={64} className="text-muted/20 mb-4" />
         <p className="text-muted-foreground">No report data available. Upload a statement first.</p>
+        <Link href="/onboarding" className="mt-4">
+          <button style={{
+            padding: '10px 20px', borderRadius: '10px',
+            background: 'var(--accent-primary)', color: '#ffffff',
+            fontWeight: 700, border: 'none', cursor: 'pointer'
+          }}>
+            Upload Statement
+          </button>
+        </Link>
       </div>
     )
   }
 
   const netSavings = report.income.total - report.expenses.total
-  const visibleCategories = showAllCategories ? report.topCategories : report.topCategories?.slice(0, 8)
+  const visibleCategories = showAllCategories ? report.topCategories : report.topCategories?.slice(0, 6)
 
-  const scoreCards = [
-    { label: 'Total Income', value: formatINR(report.income.total), color: 'text-emerald-500', icon: '💰' },
-    { label: 'Total Expenses', value: formatINR(report.expenses.total), color: 'text-rose-500', icon: '💸' },
-    { label: 'Net Savings', value: formatINR(Math.abs(netSavings)), color: netSavings >= 0 ? 'text-violet-500' : 'text-red-500', icon: netSavings >= 0 ? '🏆' : '⚠️' },
-    { label: 'Savings Rate', value: `${report.savings.rate.toFixed(1)}%`, color: report.savings.rate >= 20 ? 'text-emerald-500' : report.savings.rate >= 10 ? 'text-amber-500' : 'text-rose-500', icon: '📊' },
-    { label: 'Anomalies', value: `${report.anomalies.count} found`, color: report.anomalies.count > 0 ? 'text-red-500' : 'text-emerald-500', icon: '🔍' },
-    { label: 'Subscriptions', value: `${report.subscriptions.count} active`, color: 'text-amber-500', icon: '🔄' },
+  const stats = [
+    { label: 'Income', value: report.income.total, icon: TrendingUp, bg: 'var(--income-bg)', color: 'var(--income-color)' },
+    { label: 'Expenses', value: report.expenses.total, icon: TrendingDown, bg: 'var(--expense-bg)', color: 'var(--expense-color)' },
+    { label: 'Net Savings', value: Math.abs(netSavings), icon: Trophy, bg: 'var(--savings-bg)', color: 'var(--savings-color)' },
+    { label: 'Savings Rate', value: `${report.savings.rate.toFixed(1)}%`, icon: Target, bg: 'var(--health-bg)', color: 'var(--health-color)' },
+    { label: 'Anomalies', value: report.anomalies.count, icon: AlertTriangle, bg: 'var(--expense-bg)', color: 'var(--expense-color)' },
+    { label: 'Subscriptions', value: report.subscriptions.count, icon: CreditCard, bg: 'var(--health-bg)', color: 'var(--health-color)' },
   ]
 
   return (
-    <div className="space-y-6">
-      <BackButton href="/dashboard" />
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-violet-100 dark:bg-violet-900/30">
-            <FileText className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+    <div className="flex flex-col gap-[20px]">
+      
+      {/* ── TOPBAR ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '12px',
+            background: 'var(--accent-primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)'
+          }}>
+            <FileText size={22} color="white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Financial Report</h1>
-            <p className="text-sm text-muted-foreground">{report.period.from} → {report.period.to}</p>
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: '2px' }}>
+              Financial Report
+            </h1>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {report.period.from} — {report.period.to}
+            </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => toast('PDF export coming soon! 🚀')}>
-            <Download className="h-4 w-4" />PDF
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied!') }}>
-            <Share2 className="h-4 w-4" />Share
-          </Button>
+        
+        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+          <button
+            onClick={() => toast.success('Report sharing coming soon!')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 16px', borderRadius: '10px',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              fontSize: '12px', fontWeight: 600, cursor: 'pointer'
+            }}
+          >
+            <Share2 size={14} />
+            Share
+          </button>
+          <button
+            onClick={() => toast.success('PDF download started...')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 16px', borderRadius: '10px',
+              background: 'var(--accent-primary)',
+              border: 'none', color: '#ffffff',
+              fontSize: '12px', fontWeight: 700, cursor: 'pointer'
+            }}
+          >
+            <Download size={14} />
+            Export PDF
+          </button>
         </div>
       </div>
 
-      {/* Scorecard Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {scoreCards.map((card, i) => (
-          <motion.div key={card.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">{card.icon}</span>
-              <span className="text-xs text-muted-foreground font-medium">{card.label}</span>
+      {/* ── STATS GRID ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+        {stats.map((s, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="finn-card"
+            style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}
+          >
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: s.bg, border: `1px solid ${s.color}20`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            }}>
+              <s.icon size={18} style={{ color: s.color }} />
             </div>
-            <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
+            <div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{s.label}</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {typeof s.value === 'number' ? formatINRShort(s.value) : s.value}
+              </div>
+            </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Income vs Expenses Chart */}
-      {report.monthlyTrend?.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Income vs Expenses</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={report.monthlyTrend} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(val: any) => formatINR(Number(val))} />
-                <Legend />
-                <Bar dataKey="income" fill={CHART_COLORS.secondary} name="Income" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expenses" fill={CHART_COLORS.danger} name="Expenses" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Category Breakdown */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Category Breakdown</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {visibleCategories?.map((cat) => (
-            <div key={cat.category}>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium">{cat.category}</span>
-                <span className="text-muted-foreground">{formatINR(cat.amount)}</span>
+      {/* ── CHARTS ROW ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '20px' }}>
+        
+        {/* Trend Chart */}
+        <div className="finn-card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>Monthly Trend</h3>
+            <div style={{ display: 'flex', gap: '12px', fontSize: '11px', fontWeight: 700 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-primary)' }} />
+                <span style={{ color: 'var(--text-muted)' }}>Income</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                  <motion.div className="h-full rounded-full" style={{ backgroundColor: CATEGORY_COLORS[cat.category] || 'hsl(var(--chart-1))' }}
-                    initial={{ width: 0 }} animate={{ width: `${cat.percentage}%` }} transition={{ duration: 0.8, ease: 'easeOut' }} />
-                </div>
-                <span className="text-xs text-muted-foreground w-8 text-right">{cat.percentage}%</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--expense-color)' }} />
+                <span style={{ color: 'var(--text-muted)' }}>Expenses</span>
+              </div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={report.monthlyTrend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+              <Tooltip
+                cursor={{ fill: 'var(--bg-elevated)', opacity: 0.4 }}
+                contentStyle={{
+                  background: 'var(--bg-surface)', border: '1px solid var(--border-medium)',
+                  borderRadius: '12px', boxShadow: 'var(--card-shadow)', fontSize: '12px'
+                }}
+              />
+              <Bar dataKey="income" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar dataKey="expenses" fill="var(--expense-color)" radius={[4, 4, 0, 0]} barSize={20} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Highlights */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {[
+            { icon: '🏆', label: 'Best Savings Month', val: report.highlights?.best?.label || 'N/A', bg: 'var(--income-bg)', color: 'var(--income-color)' },
+            { icon: '💸', label: 'Highest Spending', val: report.highlights?.worst?.label || 'N/A', bg: 'var(--expense-bg)', color: 'var(--expense-color)' },
+            { icon: '💎', label: 'Biggest Transaction', val: report.highlights?.biggest?.label || 'N/A', bg: 'var(--savings-bg)', color: 'var(--savings-color)' },
+            { icon: '🔁', label: 'Most Consistent', val: report.highlights?.consistent?.label || 'N/A', bg: 'var(--health-bg)', color: 'var(--health-color)' },
+          ].map((h, i) => (
+            <div key={i} className="finn-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ fontSize: '24px' }}>{h.icon}</div>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{h.label}</div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>{h.val}</div>
               </div>
             </div>
           ))}
-          {report.topCategories?.length > 8 && (
-            <button onClick={() => setShowAllCategories(v => !v)} className="text-xs text-violet-500 hover:text-violet-400 font-medium">
-              {showAllCategories ? 'Show less ↑' : `Show ${report.topCategories.length - 8} more ↓`}
-            </button>
-          )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Highlights */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          { icon: '🏆', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/20', label: 'Best Savings Month', value: report.highlights?.best?.label || 'N/A' },
-          { icon: '⚠️', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20', label: 'Highest Spend Month', value: report.highlights?.worst?.label || 'N/A' },
-          { icon: '💳', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-950/20', label: 'Biggest Transaction', value: report.highlights?.biggest?.label || 'N/A' },
-          { icon: '🔄', color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-950/20', label: 'Most Consistent', value: report.highlights?.consistent?.label || 'N/A' },
-        ].map((h) => (
-          <div key={h.label} className={`rounded-xl p-4 ${h.bg}`}>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xl">{h.icon}</span>
-              <span className={`text-xs font-medium ${h.color}`}>{h.label}</span>
-            </div>
-            <p className="text-sm font-semibold">{h.value}</p>
-          </div>
-        ))}
       </div>
 
-      {/* Health Score */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Financial Health Score</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="text-5xl font-bold" style={{ color: HEALTH_SCORE_COLOR(report.healthScore.score) }}>
-              {report.healthScore.score}
-            </div>
-            <div>
-              <p className="font-semibold">Grade {report.healthScore.grade}</p>
-              <p className="text-sm text-muted-foreground">out of 100</p>
-            </div>
-            <div className="flex-1">
-              <div className="h-3 rounded-full bg-muted/30 overflow-hidden relative">
-                <motion.div 
-                  className="h-full rounded-full shadow-[0_0_12px_rgba(0,0,0,0.1)]" 
-                  initial={{ width: 0, backgroundColor: '#374151' }} 
-                  animate={{ 
-                    width: `${report.healthScore.score}%`,
-                    backgroundColor: HEALTH_SCORE_COLOR(report.healthScore.score),
-                    boxShadow: `0 0 15px ${HEALTH_SCORE_COLOR(report.healthScore.score)}44`
-                  }} 
-                  transition={{ duration: 1.2, ease: 'easeOut' }} 
-                />
-              </div>
-            </div>
+      {/* ── CATEGORIES ── */}
+      <div className="finn-card" style={{ padding: '24px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '20px' }}>
+          Category Breakdown
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {visibleCategories?.slice(0, 5).map((cat: any, i: number) => {
+              const colors = ['var(--accent-primary)', 'var(--income-color)', 'var(--savings-color)', 'var(--expense-color)', '#60a5fa']
+              const color = colors[i % colors.length]
+              return (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', fontWeight: 700 }}>
+                    <span style={{ color: 'var(--text-primary)' }}>{cat.category}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{formatINR(cat.amount)}</span>
+                  </div>
+                  <div style={{ height: '8px', background: 'var(--bg-elevated)', borderRadius: '999px', overflow: 'hidden' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${cat.percentage}%` }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      style={{ height: '100%', background: color, borderRadius: '999px' }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        </CardContent>
-      </Card>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {visibleCategories?.slice(5, 10).map((cat: any, i: number) => {
+              const colors = ['#f472b6', '#fb923c', '#4ade80', '#c084fc', '#60a5fa']
+              const color = colors[i % colors.length]
+              return (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', fontWeight: 700 }}>
+                    <span style={{ color: 'var(--text-primary)' }}>{cat.category}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{formatINR(cat.amount)}</span>
+                  </div>
+                  <div style={{ height: '8px', background: 'var(--bg-elevated)', borderRadius: '999px', overflow: 'hidden' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${cat.percentage}%` }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      style={{ height: '100%', background: color, borderRadius: '999px' }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        {report.topCategories?.length > 10 && (
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            <button
+              onClick={() => setShowAllCategories(!showAllCategories)}
+              style={{
+                background: 'none', border: 'none', color: 'var(--accent-text)',
+                fontSize: '12px', fontWeight: 700, cursor: 'pointer'
+              }}
+            >
+              {showAllCategories ? 'Show Less ↑' : 'Show All Categories ↓'}
+            </button>
+          </div>
+        )}
+      </div>
+
+    </div>
+  )
+}
+
+function ReportSkeleton() {
+  return (
+    <div className="p-6 space-y-6 animate-pulse">
+      <div className="h-10 w-48 bg-muted rounded-xl"/>
+      <div className="grid grid-cols-3 gap-4">
+        {[1,2,3,4,5,6].map(i => <div key={i} className="h-20 bg-muted rounded-xl"/>)}
+      </div>
+      <div className="h-64 bg-muted rounded-2xl"/>
     </div>
   )
 }

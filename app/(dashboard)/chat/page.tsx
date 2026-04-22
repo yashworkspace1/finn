@@ -1,11 +1,11 @@
 'use client'
+
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Trash2, MessageCircle } from 'lucide-react'
+import { Send, Trash2, MessageCircle, Sparkles, Zap, Trash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { BackButton } from '@/components/common/BackButton'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -17,12 +17,11 @@ interface Message {
 }
 
 const SUGGESTED = [
-  "Where did I spend the most this month? 💸",
-  "Am I saving enough for my income? 🏦",
-  "What subscriptions can I cancel? 🔄",
-  "Should I start investing? 📈",
-  "How can I improve my financial health? 💪",
-  "Explain my spending personality 🧠",
+  "What's my biggest expense category? 💸",
+  "How much did I save this month? 🏦",
+  "Show me my recurring subscriptions 🔄",
+  "Is my cash flow improving? 📈",
+  "Analyze my spending personality 🧠",
 ]
 
 export default function FinChatPage() {
@@ -32,7 +31,6 @@ export default function FinChatPage() {
   const [loadingHistory, setLoadingHistory] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Load chat history on mount
   useEffect(() => {
     async function loadHistory() {
       try {
@@ -50,7 +48,6 @@ export default function FinChatPage() {
     loadHistory()
   }, [])
 
-  // Auto scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
@@ -109,146 +106,189 @@ export default function FinChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
-        <div className="flex items-center gap-3">
-          <BackButton href="/dashboard" className="" />
-          <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center text-white font-bold text-lg relative">
-            F
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card"/>
+    <div className="flex flex-col h-[calc(100vh-120px)] relative">
+      
+      {/* ── HEADER ── */}
+      <div style={{ 
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+        padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)',
+        background: 'var(--bg-surface)', borderTopLeftRadius: '24px', borderTopRightRadius: '24px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ 
+            width: '40px', height: '40px', borderRadius: '12px', 
+            background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)'
+          }}>
+            <Sparkles size={22} color="white" />
           </div>
           <div>
-            <p className="font-semibold tracking-tight">FINN</p>
-            <p className="text-xs text-muted-foreground">Your AI Financial Advisor</p>
+            <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+              FinChat Copilot
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>FINN AI Online</span>
+            </div>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button 
           onClick={clearChat}
-          className="transition-all duration-200 hover:scale-[1.05] active:scale-[0.95] hover:text-destructive"
+          style={{ 
+            padding: '8px', borderRadius: '10px', background: 'var(--bg-elevated)', 
+            border: '1px solid var(--border-subtle)', cursor: 'pointer', color: 'var(--text-muted)' 
+          }}
         >
-          <Trash2 className="w-4 h-4"/>
-        </Button>
+          <Trash size={16} />
+        </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {loadingHistory && (
-          <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"/>
+      {/* ── MESSAGES AREA ── */}
+      <div style={{ 
+        flex: 1, overflowY: 'auto', padding: '30px 24px', 
+        display: 'flex', flexDirection: 'column', gap: '24px',
+        background: 'var(--bg-surface)'
+      }}>
+        {loadingHistory ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <RefreshCw className="animate-spin text-accent-primary" size={24} />
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Synchronizing intelligence...</span>
           </div>
-        )}
-
-        {!loadingHistory && messages.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-12 space-y-6"
-          >
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-16 h-16 rounded-full bg-violet-600/20 flex items-center justify-center"
+        ) : messages.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              style={{ 
+                width: '80px', height: '80px', borderRadius: '24px', 
+                background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '24px'
+              }}
             >
-              <MessageCircle className="w-8 h-8 text-violet-500"/>
+              <MessageCircle size={32} style={{ color: 'var(--accent-primary)' }} />
             </motion.div>
-            <div className="text-center">
-              <h3 className="font-semibold text-lg tracking-tight">Hi! I&apos;m FINN 👋</h3>
-              <p className="text-muted-foreground text-sm mt-1">Ask me anything about your finances</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
-              {SUGGESTED.map(q => (
-                <button
-                  key={q}
-                  onClick={() => handleSend(q)}
-                  className="p-3 text-sm text-left bg-card border rounded-xl hover:border-violet-500/60 hover:bg-violet-500/5 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+            <h3 style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '8px' }}>I&apos;m FINN.</h3>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '320px', marginBottom: '40px' }}>
+              Your private financial advisor. I can analyze your transactions, predict taxes, and find leaks.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', width: '100%', maxWidth: '400px' }}>
+              {SUGGESTED.map((q, i) => (
+                <button 
+                  key={i} onClick={() => handleSend(q)}
+                  style={{ 
+                    padding: '14px 20px', borderRadius: '14px', background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)',
+                    fontSize: '13px', fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = 'var(--bg-surface)' }}
+                  onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-elevated)' }}
                 >
                   {q}
                 </button>
               ))}
             </div>
-          </motion.div>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {messages.map((msg) => (
+              <motion.div 
+                key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                style={{ 
+                  display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                  gap: '12px', alignItems: 'flex-start'
+                }}
+              >
+                <div style={{ 
+                  width: '32px', height: '32px', borderRadius: '10px', 
+                  background: msg.role === 'user' ? 'var(--bg-elevated)' : 'var(--accent-primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '12px', fontWeight: 800, color: '#ffffff', flexShrink: 0
+                }}>
+                  {msg.role === 'user' ? 'U' : 'F'}
+                </div>
+                <div style={{ 
+                  maxWidth: '75%', padding: '16px 20px', borderRadius: '20px',
+                  background: msg.role === 'user' ? 'var(--bg-elevated)' : 'var(--bg-overlay)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)', fontSize: '14px', lineHeight: 1.6,
+                  borderTopRightRadius: msg.role === 'user' ? '4px' : '20px',
+                  borderTopLeftRadius: msg.role === 'assistant' ? '4px' : '20px',
+                  boxShadow: msg.role === 'assistant' ? '0 10px 30px rgba(124, 58, 237, 0.05)' : 'none'
+                }}>
+                  {msg.role === 'assistant' ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.message}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p>{msg.message}</p>
+                  )}
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '8px', fontWeight: 700 }}>
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
 
-        <AnimatePresence>
-          {messages.map(msg => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">F</div>
-              )}
-              <div
-                className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-violet-600 text-white rounded-tr-sm'
-                    : 'bg-card border rounded-tl-sm'
-                }`}
-              >
-                {msg.role === 'assistant' ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-p:leading-relaxed prose-strong:text-violet-400 dark:prose-strong:text-violet-300 prose-ul:my-1 prose-li:my-0.5 prose-headings:text-sm">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.message}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <span>{msg.message}</span>
-                )}
-                <p className={`text-[10px] mt-1.5 ${msg.role === 'user' ? 'text-violet-200' : 'text-muted-foreground'}`}>
-                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
         {loading && (
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">F</div>
-            <div className="bg-card border rounded-2xl rounded-tl-sm px-4 py-3">
-              <div className="flex gap-1 items-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, color: '#ffffff' }}>F</div>
+            <div style={{ padding: '12px 20px', borderRadius: '20px', borderTopLeftRadius: '4px', background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', gap: '6px' }}>
                 {[0, 1, 2].map(i => (
-                  <motion.div
-                    key={i}
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ delay: i * 0.15, repeat: Infinity, duration: 0.6 }}
-                    className="w-2 h-2 bg-muted-foreground rounded-full"
+                  <motion.div 
+                    key={i} animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                    style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', borderRadius: '50%' }} 
                   />
                 ))}
               </div>
             </div>
           </motion.div>
         )}
-        <div ref={bottomRef}/>
+        <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 border-t bg-card">
-        <div className="flex gap-2 max-w-4xl mx-auto">
-          <Input
-            value={input}
-            onChange={e => setInput(e.target.value)}
+      {/* ── INPUT AREA ── */}
+      <div style={{ 
+        padding: '24px', background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)',
+        borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px'
+      }}>
+        <div style={{ position: 'relative', maxWidth: '800px', margin: '0 auto' }}>
+          <input 
+            value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-            placeholder="Ask FINN anything about your finances..."
+            placeholder="Ask FINN anything about your money..."
             disabled={loading}
-            className="flex-1 h-11 bg-background focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all duration-200"
-            maxLength={500}
+            style={{ 
+              width: '100%', padding: '16px 60px 16px 20px', borderRadius: '16px',
+              background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)',
+              color: 'var(--text-primary)', fontSize: '15px', outline: 'none', transition: 'all 0.2s'
+            }}
           />
-          <Button
-            onClick={() => handleSend()}
-            disabled={loading || !input.trim()}
-            className="h-11 w-11 bg-violet-600 hover:bg-violet-700 p-0 shadow-lg transition-all duration-200 hover:scale-[1.05] active:scale-[0.95]"
+          <button 
+            onClick={() => handleSend()} disabled={loading || !input.trim()}
+            style={{ 
+              position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+              width: '40px', height: '40px', borderRadius: '12px', background: 'var(--accent-primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff',
+              border: 'none', cursor: 'pointer', opacity: (loading || !input.trim()) ? 0.5 : 1
+            }}
           >
-            <Send className="w-4 h-4 text-white"/>
-          </Button>
+            <Send size={18} />
+          </button>
         </div>
+        <p style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '12px', fontWeight: 600 }}>
+          FINN may provide estimates. Always cross-check with actual bank records.
+        </p>
       </div>
+
     </div>
   )
 }
+
+const RefreshCw = ({ className, size }: { className?: string, size?: number }) => (
+  <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+    <Zap size={size} className={className} />
+  </motion.div>
+)

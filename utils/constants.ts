@@ -1,12 +1,18 @@
 // ─── Chart Colors ────────────────────────────────────────────────────────────
-// Mapped to CSS variables defined in globals.css
-export const CHART_COLORS = {
-  primary:   '#8b5cf6',   // violet
-  secondary: '#10b981',   // emerald
-  tertiary:  '#6366f1',   // indigo
-  warning:   '#f59e0b',   // amber
-  danger:    '#f43f5e',   // rose
-}
+export const CHART_COLORS = [
+  '#9b7fc4', // mauve
+  '#f0a500', // amber
+  '#4ecca3', // teal
+  '#f472b6', // pink
+  '#60a5fa', // blue
+  '#fb923c', // orange
+  '#a78bfa', // violet
+  '#34d399', // emerald
+  '#facc15', // yellow
+  '#f87171', // red
+  '#38bdf8', // sky
+  '#c084fc', // purple
+];
 
 // ─── Spending Categories ──────────────────────────────────────────────────────
 export const CATEGORIES = [

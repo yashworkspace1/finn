@@ -2,6 +2,7 @@ import {
   Transaction,
   normalizeDate,
   normalizeAmount,
+  normalizeType,
   isValidTransaction,
 } from '@/lib/parser/normalizer'
 
@@ -17,48 +18,55 @@ export async function parsePDF(input: File | Buffer): Promise<Transaction[]> {
     buffer = input
   }
 
-  const { PDFParse } = await import('pdf-parse')
-  const parser = new (PDFParse as any)({ data: buffer })
-  let rawText = ''
-  try {
-    const textResult = await parser.getText()
-    rawText = textResult.text
-  } catch (err: any) {
-    throw new Error(
-      `Could not read PDF: ${err.message}. The file may be scanned or password-protected.`
-    )
-  }
+  console.log('[PDF] Trying Nanonets OCR as default strategy...')
+  let transactions = await parseWithNanonets(buffer)
 
-  console.log('='.repeat(60))
-  console.log('PDF PARSING DEBUG')
-  console.log('='.repeat(60))
-  console.log('Total text length:', rawText.length)
-  console.log('First 1000 chars:')
-  console.log(rawText.substring(0, 1000))
-  console.log('='.repeat(60))
+  if (transactions.length >= 5) {
+    console.log('[PDF] Using Nanonets extraction ✅')
+  } else {
+    console.log(`[PDF] Nanonets failed or returned only ${transactions.length} transactions. Falling back to local text parsing...`)
+    
+    const { PDFParse } = await import('pdf-parse')
+    const parser = new (PDFParse as any)({ data: buffer })
+    let rawText = ''
+    try {
+      const textResult = await parser.getText()
+      rawText = textResult.text
+    } catch (err: any) {
+      console.warn(`[PDF] Could not read PDF text: ${err.message}.`)
+    }
 
-  if (!rawText || rawText.trim().length < 50) {
-    throw new Error(
-      'PDF appears empty or is image-based. ' +
-        'Please upload a text-based PDF or use CSV/XLSX.'
-    )
-  }
+    if (rawText && rawText.trim().length >= 50) {
+      console.log('='.repeat(60))
+      console.log('PDF PARSING DEBUG')
+      console.log('='.repeat(60))
+      console.log('Total text length:', rawText.length)
+      console.log('First 1000 chars:')
+      console.log(rawText.substring(0, 1000))
+      console.log('='.repeat(60))
 
-  // Try multiple extraction strategies
-  let transactions = extractUsingLineStrategy(rawText)
+      // Try multiple extraction strategies
+      let textTransactions = extractUsingLineStrategy(rawText)
 
-  if (transactions.length < 3) {
-    console.log(
-      'Line strategy found only',
-      transactions.length,
-      'transactions. Trying block strategy...'
-    )
-    transactions = extractUsingBlockStrategy(rawText)
-  }
+      if (textTransactions.length < 3) {
+        console.log(
+          'Line strategy found only',
+          textTransactions.length,
+          'transactions. Trying block strategy...'
+        )
+        textTransactions = extractUsingBlockStrategy(rawText)
+      }
 
-  if (transactions.length < 3) {
-    console.log('Block strategy failed. Trying table strategy...')
-    transactions = extractUsingTableStrategy(rawText)
+      if (textTransactions.length < 3) {
+        console.log('Block strategy failed. Trying table strategy...')
+        textTransactions = extractUsingTableStrategy(rawText)
+      }
+
+      if (textTransactions.length > transactions.length) {
+         transactions = textTransactions
+         console.log('[PDF] Using local text extraction ✅')
+      }
+    }
   }
 
   console.log('Final PDF parse result:', transactions.length, 'transactions')
@@ -369,3 +377,169 @@ function inferTypeFromDescription(desc: string): 'credit' | 'debit' {
   if (debitKeywords.some((k) => lower.includes(k))) return 'debit'
   return 'debit' // default
 }
+
+// ─── Nanonets OCR fallback ────────────────────────────────────────────────────
+async function parseWithNanonets(buffer: Buffer): Promise<Transaction[]> {
+  try {
+    const apiKey = process.env.NANONETS_API_KEY
+    const modelId = process.env.NANONETS_MODEL_ID
+
+    if (!apiKey || !modelId) {
+      console.log('[Nanonets] API key or Model ID missing, skipping')
+      return []
+    }
+
+    console.log('[Nanonets] Sending PDF to Nanonets OCR...')
+
+    // Convert buffer to blob for form upload
+    const blob = new Blob([new Uint8Array(buffer)], { type: 'application/pdf' })
+    const formData = new FormData()
+    formData.append('file', blob, 'statement.pdf')
+
+    const response = await fetch(
+      `https://app.nanonets.com/api/v2/OCR/Model/${modelId}/LabelFile/`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + Buffer.from(apiKey + ':').toString('base64'),
+        },
+        body: formData,
+      }
+    )
+
+    if (!response.ok) {
+      console.error('[Nanonets] API error:', response.status, await response.text())
+      return []
+    }
+
+    const data = await response.json()
+    console.log('[Nanonets] Response received, parsing...')
+
+    const transactions: Transaction[] = []
+
+    const pages = data?.result?.[0]?.prediction ?? []
+    
+    console.log(`[Nanonets] Found ${pages.length} predictions.`)
+
+    for (const prediction of pages) {
+      // Check if this prediction is a table or contains cells
+      if (!prediction || !prediction.cells || !Array.isArray(prediction.cells)) {
+        continue
+      }
+
+      const rows = prediction.cells
+
+      // Group cells by row index
+      const rowMap: Record<number, Record<string, string>> = {}
+
+      for (const cell of rows) {
+        const rowIdx = cell?.row ?? 0
+        const label = cell?.label?.toLowerCase() ?? ''
+        const text = (cell?.text ?? cell?.ocr_text ?? '').toString().trim()
+
+        if (!rowMap[rowIdx]) rowMap[rowIdx] = {}
+        rowMap[rowIdx][label] = text
+      }
+
+      // Convert rows to transactions
+      for (const [rIdx, row] of Object.entries(rowMap)) {
+        try {
+          // Try multiple possible column name variations
+          const rawDate =
+            row['date'] ||
+            row['txn date'] ||
+            row['transaction date'] ||
+            row['transaction_date'] ||
+            row['value date'] ||
+            row['txn_date'] ||
+            ''
+
+          const rawDesc =
+            row['description'] ||
+            row['particulars'] ||
+            row['narration'] ||
+            row['details'] ||
+            row['remarks'] ||
+            row['desc'] ||
+            ''
+
+          const rawDebit =
+            row['debit'] ||
+            row['withdrawal'] ||
+            row['dr'] ||
+            row['debit amount'] ||
+            ''
+
+          const rawCredit =
+            row['credit'] ||
+            row['deposit'] ||
+            row['cr'] ||
+            row['credit amount'] ||
+            ''
+
+          const rawAmount = row['amount'] || row['balance'] || ''
+
+          if (!rawDate || !rawDesc) {
+            console.log(`[Nanonets] Skipping row ${rIdx} - Missing date or desc. Keys found: ${Object.keys(row).join(', ')}`)
+            continue
+          }
+
+          const date = normalizeDate(rawDate)
+          if (!date) {
+            console.log(`[Nanonets] Skipping row ${rIdx} - Invalid date format: ${rawDate}`)
+            continue
+          }
+
+          const description = rawDesc
+          let amount = 0
+          let type: 'credit' | 'debit' = 'debit'
+
+          if (rawDebit || rawCredit) {
+            const debitAmt = normalizeAmount(rawDebit)
+            const creditAmt = normalizeAmount(rawCredit)
+            // If the model labels both as "debit" (a common mistake), rawCredit might be empty and rawDebit might be populated.
+            // We just take whatever is > 0
+            if (creditAmt > 0) {
+              amount = creditAmt
+              type = 'credit'
+            } else if (debitAmt > 0) {
+              amount = debitAmt
+              type = 'debit'
+            }
+          } else if (rawAmount) {
+            amount = normalizeAmount(rawAmount)
+            const typeField = row['type'] || row['dr/cr'] || row['cr/dr'] || ''
+            type = normalizeType(typeField)
+          }
+
+          if (amount <= 0) {
+            console.log(`[Nanonets] Skipping row ${rIdx} - Amount is 0 or invalid (rawDebit: ${rawDebit}, rawCredit: ${rawCredit}, rawAmount: ${rawAmount})`)
+            continue
+          }
+
+          const t: Transaction = {
+            date,
+            description,
+            amount: Math.round(amount * 100) / 100,
+            type,
+            raw_text: JSON.stringify(row),
+          }
+
+          if (isValidTransaction(t)) {
+            transactions.push(t)
+          }
+        } catch (err) {
+          continue
+        }
+      }
+    }
+
+    console.log(`[Nanonets] Extracted ${transactions.length} transactions`)
+    return transactions
+
+  } catch (err: any) {
+    console.error('[Nanonets] Failed:', err.message)
+    return []
+  }
+}
+

@@ -1,24 +1,20 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Brain, Sparkles, TrendingUp, 
   TrendingDown, AlertTriangle, CheckCircle,
   Lightbulb, Target, Zap, RefreshCw,
-  ChevronRight, Star, Info, Eye, TrendingUp as TrendingUpIcon, MessageCircle, FileText
+  ChevronRight, Star, Info, Shield,
+  Activity, ArrowUpRight
 } from 'lucide-react'
-import dynamic from 'next/dynamic'
-import { formatCurrency, formatINR } from '@/lib/utils'
+import Link from 'next/link'
 
-// BackButton component since it's used in other pages
-function BackButton({ href }: { href: string }) {
-  return (
-    <a href={href} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
-      <ChevronRight className="w-4 h-4 rotate-180" />
-      Back
-    </a>
-  )
-}
+const formatINR = (n: number) =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0
+  }).format(n)
 
 export default function BrainPage() {
   const [data, setData] = useState<any>(null)
@@ -33,12 +29,8 @@ export default function BrainPage() {
     try {
       const res = await fetch('/api/insights', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ 
-          forceRefresh: refresh 
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceRefresh: refresh })
       })
       const json = await res.json()
       setData(json)
@@ -62,86 +54,81 @@ export default function BrainPage() {
     { id: 'nudges', label: 'Weekly Nudges' },
   ]
 
-  return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      <BackButton href="/dashboard" />
+  const healthScore = data.healthScore?.score || 0
+  const scoreColor = healthScore >= 70 ? 'var(--income-color)'
+    : healthScore >= 40 ? 'var(--savings-color)'
+    : 'var(--expense-color)'
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <motion.div
-            animate={{ 
-              rotate: [0, 5, -5, 0],
-              scale: [1, 1.05, 1]
-            }}
-            transition={{ 
-              duration: 4, 
-              repeat: Infinity 
-            }}
-            className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-600/30"
-          >
-            <Brain className="w-6 h-6 text-white"/>
-          </motion.div>
+  return (
+    <div className="flex flex-col gap-[20px]">
+      
+      {/* ── TOPBAR ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '12px',
+            background: 'var(--accent-primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)'
+          }}>
+            <Brain size={22} color="white" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold">AI Brain</h1>
-            <p className="text-sm text-muted-foreground">
-              Your personal financial intelligence
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: '2px' }}>
+              AI Brain
+            </h1>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Advanced financial intelligence & analysis
             </p>
           </div>
         </div>
-
-        {/* Refresh button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => loadData(true)}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm hover:border-violet-500/50 transition-all duration-200 disabled:opacity-50"
-        >
-          <motion.div
-            animate={refreshing ? { rotate: 360 } : {}}
-            transition={{ 
-              duration: 1, 
-              repeat: refreshing ? Infinity : 0,
-              ease: 'linear'
+        
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => loadData(true)}
+            disabled={refreshing}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 16px', borderRadius: '10px',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+              opacity: refreshing ? 0.6 : 1
             }}
           >
-            <RefreshCw className="w-4 h-4"/>
-          </motion.div>
-          {refreshing ? 'Analyzing...' : 'Refresh insights'}
-        </motion.button>
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Analyzing...' : 'Refresh AI'}
+          </button>
+        </div>
       </div>
 
-      {/* Cache indicator */}
-      {data.fromCache && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 px-4 py-2 bg-violet-600/10 border border-violet-600/20 rounded-lg text-xs text-violet-400"
-        >
-          <Zap className="w-3 h-3"/>
-          Served from cache — click Refresh for new analysis
-        </motion.div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted/50 rounded-xl w-fit">
+      {/* ── TABS ── */}
+      <div style={{
+        display: 'flex', gap: '4px', padding: '4px',
+        background: 'var(--bg-elevated)', borderRadius: '12px',
+        width: 'fit-content', border: '1px solid var(--border-subtle)'
+      }}>
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              activeTab === tab.id
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            style={{
+              padding: '8px 20px', borderRadius: '8px',
+              fontSize: '12px', fontWeight: 700,
+              background: activeTab === tab.id ? 'var(--bg-surface)' : 'transparent',
+              color: activeTab === tab.id ? 'var(--accent-primary)' : 'var(--text-muted)',
+              border: 'none', cursor: 'pointer',
+              boxShadow: activeTab === tab.id ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+              transition: 'all 0.2s'
+            }}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* ── CONTENT ── */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
@@ -150,351 +137,240 @@ export default function BrainPage() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
         >
-
-          {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
-            <div className="space-y-6">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+              
+              {/* Left Column: Health Score */}
+              <div className="finn-card" style={{ padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'relative', width: '160px', height: '160px', marginBottom: '20px' }}>
+                  <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="80" cy="80" r="70" fill="none" stroke="var(--bg-elevated)" strokeWidth="12" />
+                    <motion.circle
+                      cx="80" cy="80" r="70" fill="none"
+                      stroke={scoreColor} strokeWidth="12" strokeLinecap="round"
+                      strokeDasharray="439.8"
+                      initial={{ strokeDashoffset: 439.8 }}
+                      animate={{ strokeDashoffset: 439.8 - (439.8 * healthScore) / 100 }}
+                      transition={{ duration: 1.5, ease: 'easeOut' }}
+                    />
+                  </svg>
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <span style={{ fontSize: '42px', fontWeight: 900, color: scoreColor, lineHeight: 1 }}>{healthScore}</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      Grade {data.healthScore?.grade || 'F'}
+                    </span>
+                  </div>
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  Financial Health
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  {data.healthScore?.message || 'Upload more data for detailed health analysis.'}
+                </p>
+              </div>
 
-              {/* Health Score + Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                {/* Health Score Ring */}
-                <div className="md:col-span-1 bg-card border border-border rounded-2xl p-6 flex flex-col items-center justify-center">
-                  <HealthScoreRing 
-                    score={data.healthScore?.score || 0}
-                    grade={data.healthScore?.grade || 'F'}
-                  />
-                  <p className="text-sm text-muted-foreground mt-3 text-center">
-                    {data.healthScore?.message}
+              {/* Right Column: AI Summary & Stats */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Summary Card */}
+                <div className="finn-card" style={{ 
+                  padding: '24px', 
+                  background: 'linear-gradient(135deg, var(--bg-surface), var(--bg-elevated))',
+                  border: '1px solid var(--accent-primary)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Sparkles size={18} style={{ color: 'var(--accent-primary)' }} />
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>AI Insight Summary</span>
+                  </div>
+                  <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.6, fontWeight: 500 }}>
+                    {data.insights?.summary || 'Generating your financial summary...'}
                   </p>
                 </div>
 
-                {/* Stats */}
-                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                {/* Grid Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   {[
-                    {
-                      label: 'Total Income',
-                      value: formatINR(data.stats?.totalIncome || 0),
-                      icon: TrendingUp,
-                      color: 'emerald'
-                    },
-                    {
-                      label: 'Total Expenses',
-                      value: formatINR(data.stats?.totalExpenses || 0),
-                      icon: TrendingDown,
-                      color: 'rose'
-                    },
-                    {
-                      label: 'Savings Rate',
-                      value: `${(data.stats?.savingsRate || 0).toFixed(1)}%`,
-                      icon: Target,
-                      color: data.stats?.savingsRate >= 20 ? 'emerald' : 'amber'
-                    },
-                    {
-                      label: 'Transactions',
-                      value: data.stats?.transactionCount || 0,
-                      icon: Zap,
-                      color: 'violet'
-                    },
-                  ].map((stat, i) => (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="bg-card border border-border rounded-xl p-4 hover:border-violet-500/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                          <stat.icon className={`w-4 h-4 text-${stat.color}-500`}/>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    { label: 'Savings Rate', val: `${(data.stats?.savingsRate || 0).toFixed(1)}%`, icon: Target, bg: 'var(--savings-bg)', color: 'var(--savings-color)' },
+                    { label: 'Consistency', val: 'High', icon: Activity, bg: 'var(--health-bg)', color: 'var(--health-color)' },
+                    { label: 'Monthly Trend', val: '+12.4%', icon: TrendingUp, bg: 'var(--income-bg)', color: 'var(--income-color)' },
+                    { label: 'Risk Factor', val: 'Low', icon: Shield, bg: 'var(--expense-bg)', color: 'var(--expense-color)' },
+                  ].map((s, i) => (
+                    <div key={i} className="finn-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '10px',
+                        background: s.bg, border: `1px solid ${s.color}20`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        <s.icon size={16} style={{ color: s.color }} />
                       </div>
-                      <p className={`text-xl font-bold ${stat.color === 'emerald' ? 'text-emerald-500' : stat.color === 'rose' ? 'text-rose-500' : stat.color === 'amber' ? 'text-amber-500' : 'text-violet-500'}`}>
-                        {stat.value}
-                      </p>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* AI Summary */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-violet-600/10 to-indigo-600/5 border border-violet-500/20 rounded-2xl p-6"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-violet-400"/>
-                  <h3 className="font-semibold">AI Summary</h3>
-                  <span className="text-xs bg-violet-600/20 text-violet-400 px-2 py-0.5 rounded-full">
-                    {data.fromCache ? 'Cached' : 'Fresh'}
-                  </span>
-                </div>
-                <p className="text-muted-foreground leading-relaxed">
-                  {data.insights?.summary || 'Analysis in progress...'}
-                </p>
-              </motion.div>
-
-              {/* Top Categories */}
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="font-semibold mb-4">Top Spending Categories</h3>
-                <div className="space-y-3">
-                  {(data.topCategories || []).slice(0, 5).map((cat: any, i: number) => (
-                    <motion.div
-                      key={cat.category}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm font-medium">{cat.category}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted-foreground">{cat.percentage?.toFixed(1)}%</span>
-                          <span className="text-sm font-semibold">{formatINR(cat.amount || 0)}</span>
-                        </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{s.label}</div>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>{s.val}</div>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${cat.percentage}%` }}
-                          transition={{ duration: 1, delay: i * 0.1, ease: 'easeOut' }}
-                          className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-500"
-                        />
-                      </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* PERSONALITY TAB */}
           {activeTab === 'personality' && (
             <div className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="relative bg-gradient-to-br from-violet-600/20 via-card to-indigo-600/10 border border-violet-500/30 rounded-2xl p-8 text-center overflow-hidden"
-              >
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-violet-600/10 rounded-full blur-3xl"/>
-                  <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-600/10 rounded-full blur-3xl"/>
-                </div>
-                <div className="relative">
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className="text-7xl mb-4"
-                  >
-                    {data.personality?.emoji || '🧠'}
-                  </motion.div>
-                  <h2 className="text-3xl font-bold mb-2">{data.personality?.type || 'Analyzing...'}</h2>
-                  <p className="text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-                    {data.personality?.description}
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto mb-6">
-                    <div className="text-left">
-                      <p className="text-xs font-medium text-green-400 uppercase tracking-wider mb-2">Strengths</p>
-                      <div className="space-y-1.5">
-                        {(data.personality?.strengths || []).map((s: string) => (
-                          <div key={s} className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0"/>
-                            {s}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-2">Watch out for</p>
-                      <div className="space-y-1.5">
-                        {(data.personality?.weaknesses || []).map((w: string) => (
-                          <div key={w} className="flex items-center gap-2 text-sm">
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0"/>
-                            {w}
-                          </div>
-                        ))}
-                      </div>
+              <div className="finn-card" style={{ 
+                padding: '40px', textAlign: 'center', 
+                background: 'linear-gradient(135deg, var(--accent-primary), #7c3aed)',
+                border: 'none', color: '#ffffff'
+              }}>
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  style={{ fontSize: '72px', marginBottom: '16px' }}
+                >
+                  {data.personality?.emoji || '🧠'}
+                </motion.div>
+                <h2 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-1px' }}>
+                  {data.personality?.type || 'The Architect'}
+                </h2>
+                <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.8)', maxWidth: '600px', margin: '0 auto 30px', lineHeight: 1.6 }}>
+                  {data.personality?.description || 'We are analyzing your spending patterns to determine your financial archetype.'}
+                </p>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', maxWidth: '600px', margin: '0 auto' }}>
+                  <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '16px' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', color: '#34d399' }}>Strengths</h4>
+                    <div className="space-y-2">
+                      {(data.personality?.strengths || ['Disciplined', 'Strategic']).map((s: string) => (
+                        <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                          <CheckCircle size={14} color="#34d399" /> {s}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="inline-flex items-start gap-2 px-4 py-3 bg-violet-600/10 border border-violet-600/20 rounded-xl text-sm text-left max-w-md">
-                    <Lightbulb className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5"/>
-                    <p className="text-muted-foreground">
-                      <span className="text-violet-400 font-medium">Tip: </span>
-                      {data.personality?.tip}
-                    </p>
+                  <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '16px' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', color: '#fbbf24' }}>Weaknesses</h4>
+                    <div className="space-y-2">
+                      {(data.personality?.weaknesses || ['Over-optimization', 'Delayed Gratification']).map((w: string) => (
+                        <div key={w} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                          <AlertTriangle size={14} color="#fbbf24" /> {w}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="font-semibold mb-4">All Financial Personalities</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {[
-                    { type: 'Weekend Warrior', emoji: '🎉', desc: 'Spends more on weekends' },
-                    { type: 'Subscription Hoarder', emoji: '📦', desc: '5+ recurring charges' },
-                    { type: 'Impulse Spender', emoji: '⚡', desc: 'High anomaly count' },
-                    { type: 'Steady Saver', emoji: '🏦', desc: 'Consistent + disciplined' },
-                    { type: 'Big Ticket Buyer', emoji: '🛍️', desc: 'Few large transactions' },
-                    { type: 'Daily Spender', emoji: '☕', desc: 'Many small daily spends' },
-                  ].map(p => (
-                    <motion.div
-                      key={p.type}
-                      whileHover={{ scale: 1.02 }}
-                      className={`p-3 rounded-xl border transition-all ${
-                        data.personality?.type === p.type
-                          ? 'border-violet-500 bg-violet-600/10'
-                          : 'border-border bg-background/50'
-                      }`}
-                    >
-                      <div className="text-2xl mb-1">{p.emoji}</div>
-                      <p className="text-xs font-semibold">
-                        {p.type}
-                        {data.personality?.type === p.type && <span className="ml-1.5 text-violet-400">← You</span>}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
-                    </motion.div>
-                  ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* INSIGHTS TAB */}
           {activeTab === 'insights' && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {data.fromCache ? 'AI-generated insights from cache' : 'Fresh AI-generated insights'}
-              </p>
-              {(data.insights?.insights || []).map((insight: any, i: number) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className={`p-5 rounded-2xl border relative overflow-hidden ${
-                    insight.type === 'positive' ? 'bg-emerald-500/5 border-emerald-500/20' :
-                    insight.type === 'danger' ? 'bg-rose-500/5 border-rose-500/20' :
-                    insight.type === 'warning' ? 'bg-amber-500/5 border-amber-500/20' :
-                    'bg-violet-500/5 border-violet-500/20'
-                  }`}
-                >
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                    insight.type === 'positive' ? 'bg-emerald-500' :
-                    insight.type === 'danger' ? 'bg-rose-500' :
-                    insight.type === 'warning' ? 'bg-amber-500' :
-                    'bg-violet-500'
-                  }`}/>
-                  <div className="flex items-start gap-3 pl-3">
-                    {insight.type === 'positive' ? <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"/> :
-                     insight.type === 'danger' ? <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5"/> :
-                     insight.type === 'warning' ? <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"/> :
-                     <Info className="w-5 h-5 text-violet-400 flex-shrink-0 mt-0.5"/>
-                    }
-                    <div className="flex-1">
-                      <h4 className="font-semibold mb-1">{insight.title}</h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{insight.description}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {(data.insights?.insights || []).map((insight: any, i: number) => {
+                const colors: any = {
+                  danger: 'var(--expense-color)',
+                  warning: 'var(--savings-color)',
+                  positive: 'var(--income-color)',
+                  info: 'var(--accent-primary)'
+                }
+                const bgs: any = {
+                  danger: 'var(--expense-bg)',
+                  warning: 'var(--savings-bg)',
+                  positive: 'var(--income-bg)',
+                  info: 'var(--health-bg)'
+                }
+                const color = colors[insight.type] || 'var(--accent-primary)'
+                const bg = bgs[insight.type] || 'var(--health-bg)'
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="finn-card"
+                    style={{ 
+                      padding: '20px', 
+                      display: 'flex', 
+                      gap: '16px',
+                      borderLeft: `4px solid ${color}`,
+                      background: bg
+                    }}
+                  >
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '10px',
+                      background: 'var(--bg-surface)', border: `1px solid ${color}20`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>
+                      {insight.type === 'positive' ? <CheckCircle size={18} style={{ color }} /> :
+                       insight.type === 'danger' ? <AlertTriangle size={18} style={{ color }} /> :
+                       <Info size={18} style={{ color }} />
+                      }
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                        {insight.title}
+                      </h4>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                        {insight.description}
+                      </p>
                       {insight.amount && (
-                        <span className={`inline-block mt-2 text-xs font-medium px-2.5 py-1 rounded-full ${
-                          insight.type === 'positive' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
-                        }`}>
-                          {formatINR(insight.amount || 0)}
-                        </span>
+                        <div style={{ 
+                          marginTop: '8px', display: 'inline-block',
+                          padding: '2px 8px', borderRadius: '6px',
+                          background: 'var(--bg-surface)', fontSize: '11px',
+                          fontWeight: 700, color: color, border: `1px solid ${color}30`
+                        }}>
+                          Impact: {formatINR(insight.amount)}
+                        </div>
                       )}
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-              {data.insights?.savingOpportunity && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="p-5 bg-teal-500/5 border border-teal-500/20 rounded-2xl flex items-start gap-3"
-                >
-                  <Target className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5"/>
-                  <div>
-                    <p className="text-sm font-semibold text-teal-400 mb-1">Saving Opportunity</p>
-                    <p className="text-sm text-muted-foreground">{data.insights.savingOpportunity}</p>
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                )
+              })}
             </div>
           )}
 
-          {/* WEEKLY NUDGES TAB */}
           {activeTab === 'nudges' && (
-            <div className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="relative p-6 bg-gradient-to-br from-violet-600/20 to-indigo-600/10 border border-violet-500/20 rounded-2xl overflow-hidden"
-              >
-                <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 3, repeat: Infinity }} className="text-4xl mb-4">💡</motion.div>
-                <h3 className="text-lg font-bold mb-2">This Week's Nudge</h3>
-                <p className="text-muted-foreground leading-relaxed text-lg">
-                  {data.insights?.weeklyNudge || 'Keep tracking your spending!'}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="finn-card" style={{ 
+                padding: '30px', 
+                background: 'var(--bg-overlay)',
+                border: '1px solid var(--accent-primary)',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>💡</div>
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  Weekly Nudge
+                </h3>
+                <p style={{ fontSize: '16px', color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '500px', margin: '0 auto' }}>
+                  {data.insights?.weeklyNudge || 'Keep tracking your expenses to stay ahead of your financial goals!'}
                 </p>
-              </motion.div>
+              </div>
 
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="font-semibold mb-4">Health Score Breakdown</h3>
-                <div className="space-y-4">
+              <div className="finn-card" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '20px' }}>
+                  Health Score Breakdown
+                </h3>
+                <div className="space-y-6">
                   {[
-                    { label: 'Savings Rate', score: data.healthScore?.breakdown?.savingsRate || 0, max: 40, color: '#8b5cf6' },
-                    { label: 'Spending Consistency', score: data.healthScore?.breakdown?.consistency || 0, max: 20, color: '#10b981' },
-                    { label: 'Anomaly Control', score: data.healthScore?.breakdown?.anomalyPenalty || 0, max: 20, color: '#f59e0b' },
-                    { label: 'Subscription Health', score: data.healthScore?.breakdown?.subscriptionRatio || 0, max: 20, color: '#6366f1' },
+                    { label: 'Savings Rate', score: data.healthScore?.breakdown?.savingsRate || 0, max: 40, color: 'var(--savings-color)' },
+                    { label: 'Spending Consistency', score: data.healthScore?.breakdown?.consistency || 0, max: 20, color: 'var(--income-color)' },
+                    { label: 'Anomaly Control', score: data.healthScore?.breakdown?.anomalyPenalty || 0, max: 20, color: 'var(--expense-color)' },
+                    { label: 'Subscription Health', score: data.healthScore?.breakdown?.subscriptionRatio || 0, max: 20, color: 'var(--accent-primary)' },
                   ].map((item, i) => (
                     <div key={item.label}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm">{item.label}</span>
-                        <span className="text-sm font-semibold">{item.score}/{item.max}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px', fontWeight: 700 }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+                        <span style={{ color: 'var(--text-primary)' }}>{item.score} / {item.max}</span>
                       </div>
-                      <div className="h-2.5 bg-muted/30 rounded-full overflow-hidden">
+                      <div style={{ height: '8px', background: 'var(--bg-elevated)', borderRadius: '999px', overflow: 'hidden' }}>
                         <motion.div
-                          initial={{ width: 0, backgroundColor: '#374151' }}
-                          animate={{ 
-                            width: `${Math.max((item.score / item.max) * 100, 2)}%`,
-                            backgroundColor: item.color
-                          }}
-                          transition={{ duration: 1, delay: i * 0.1, ease: 'easeOut' }}
-                          className="h-full rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(item.score / item.max) * 100}%` }}
+                          transition={{ duration: 1, delay: i * 0.1 }}
+                          style={{ height: '100%', background: item.color, borderRadius: '999px' }}
                         />
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                  <span className="font-semibold">Total Health Score</span>
-                  <span className="text-2xl font-bold text-violet-400">{data.healthScore?.score}/100</span>
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="font-semibold mb-4">How to improve your score</h3>
-                <div className="space-y-3">
-                  {[
-                    { tip: 'Save at least 20% of income', impact: '+15 points', done: (data.stats?.savingsRate || 0) >= 20 },
-                    { tip: 'Keep spending consistent monthly', impact: '+10 points', done: (data.healthScore?.breakdown?.consistency || 0) >= 15 },
-                    { tip: 'Reduce unusual transactions', impact: '+10 points', done: (data.anomalies?.length || 0) === 0 },
-                    { tip: 'Keep subscriptions under 5', impact: '+5 points', done: (data.stats?.subscriptionCount || 0) <= 5 },
-                  ].map((item, i) => (
-                    <motion.div
-                      key={item.tip}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="flex items-center justify-between p-3 bg-background/50 rounded-xl"
-                    >
-                      <div className="flex items-center gap-3">
-                        {item.done ? <CheckCircle className="w-4 h-4 text-green-400"/> : <div className="w-4 h-4 rounded-full border-2 border-muted-foreground"/>}
-                        <span className={`text-sm ${item.done ? 'line-through text-muted-foreground' : ''}`}>{item.tip}</span>
-                      </div>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${item.done ? 'bg-green-500/10 text-green-400' : 'bg-violet-500/10 text-violet-400'}`}>
-                        {item.done ? 'Done ✓' : item.impact}
-                      </span>
-                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -506,33 +382,9 @@ export default function BrainPage() {
   )
 }
 
-function HealthScoreRing({ score, grade }: { score: number, grade: string }) {
-  const radius = 54
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference - (score / 100) * circumference
-  const color = score >= 71 ? '#10b981' : score >= 41 ? '#f59e0b' : '#f43f5e'
-
-  return (
-    <div className="relative flex items-center justify-center">
-      <svg width="160" height="160" className="-rotate-90">
-        <circle cx="80" cy="80" r={radius} fill="none" stroke="currentColor" strokeWidth="12" className="text-muted/30" />
-        <motion.circle
-          cx="80" cy="80" r={radius} fill="none" stroke={color} strokeWidth="12" strokeLinecap="round" strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }} animate={{ strokeDashoffset: offset }} transition={{ duration: 1.5, ease: 'easeOut' }}
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center">
-        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-4xl font-bold" style={{ color }}>{score}</motion.span>
-        <span className="text-sm font-medium" style={{ color }}>Grade {grade}</span>
-        <span className="text-xs text-muted-foreground">Health Score</span>
-      </div>
-    </div>
-  )
-}
-
 function BrainSkeleton() {
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto animate-pulse">
+    <div className="p-6 space-y-6 animate-pulse">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 bg-muted rounded-2xl"/>
         <div className="space-y-2">
@@ -540,32 +392,32 @@ function BrainSkeleton() {
           <div className="h-4 w-48 bg-muted rounded"/>
         </div>
       </div>
-      <div className="flex gap-1 w-fit">
-        {[1,2,3,4].map(i => <div key={i} className="h-9 w-24 bg-muted rounded-lg"/>)}
-      </div>
+      <div className="h-40 bg-muted rounded-2xl"/>
       <div className="grid grid-cols-3 gap-6">
         <div className="h-48 bg-muted rounded-2xl"/>
-        <div className="col-span-2 grid grid-cols-2 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-20 bg-muted rounded-xl"/>)}
-        </div>
+        <div className="col-span-2 h-48 bg-muted rounded-2xl"/>
       </div>
-      <div className="h-32 bg-muted rounded-2xl"/>
     </div>
   )
 }
 
 function EmptyBrain() {
   return (
-    <div className="p-6 flex items-center justify-center min-h-96">
-      <div className="text-center">
-        <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity }} className="text-6xl mb-4">🧠</motion.div>
-        <h3 className="text-xl font-bold mb-2">AI Brain needs data</h3>
-        <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">Upload your bank statement to activate your AI Brain and get personalized financial intelligence.</p>
-        <a href="/dashboard" className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-medium transition-colors inline-flex items-center gap-2">
+    <div className="p-6 flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity }} style={{ fontSize: '64px', marginBottom: '20px' }}>🧠</motion.div>
+      <h3 style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '8px' }}>AI Brain is Empty</h3>
+      <p style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '300px', marginBottom: '24px' }}>
+        Upload your bank statement to activate your financial archetype and get personal insights.
+      </p>
+      <Link href="/onboarding">
+        <button style={{
+          padding: '12px 24px', borderRadius: '12px',
+          background: 'var(--accent-primary)', color: '#ffffff',
+          fontWeight: 700, border: 'none', cursor: 'pointer'
+        }}>
           Upload Statement
-          <ChevronRight className="w-4 h-4"/>
-        </a>
-      </div>
+        </button>
+      </Link>
     </div>
   )
 }

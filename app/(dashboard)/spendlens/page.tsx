@@ -1,56 +1,30 @@
 'use client'
+
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-import { Eye, CheckCircle } from 'lucide-react'
-import { BackButton } from '@/components/common/BackButton'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { 
+  Eye, CheckCircle, AlertTriangle, CreditCard, 
+  TrendingDown, List, Calendar, ArrowUpRight,
+  RefreshCw, Search, Filter
+} from 'lucide-react'
+import {
+  PieChart, Pie, Cell, BarChart, Bar,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid
+} from 'recharts'
 import { formatINR } from '@/lib/utils'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 
-// Import Recharts with no SSR
-const PieChart = dynamic(
-  () => import('recharts').then(m => ({ default: m.PieChart })),
-  { ssr: false }
-)
-const Pie = dynamic(
-  () => import('recharts').then(m => ({ default: m.Pie })),
-  { ssr: false }
-)
-const Cell = dynamic(
-  () => import('recharts').then(m => ({ default: m.Cell })),
-  { ssr: false }
-)
-const BarChart = dynamic(
-  () => import('recharts').then(m => ({ default: m.BarChart })),
-  { ssr: false }
-)
-const Bar = dynamic(
-  () => import('recharts').then(m => ({ default: m.Bar })),
-  { ssr: false }
-)
-const XAxis = dynamic(
-  () => import('recharts').then(m => ({ default: m.XAxis })),
-  { ssr: false }
-)
-const YAxis = dynamic(
-  () => import('recharts').then(m => ({ default: m.YAxis })),
-  { ssr: false }
-)
-const Tooltip = dynamic(
-  () => import('recharts').then(m => ({ default: m.Tooltip })),
-  { ssr: false }
-)
-const ResponsiveContainer = dynamic(
-  () => import('recharts').then(m => ({ default: m.ResponsiveContainer })),
-  { ssr: false }
-)
-
-import { CATEGORY_COLORS, CHART_COLORS } from '@/utils/constants'
+const formatINRShort = (n: number) => {
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`
+  if (n >= 1000) return `₹${(n / 1000).toFixed(0)}k`
+  return `₹${n}`
+}
 
 export default function SpendLensPage() {
   const [allTransactions, setAllTransactions] = useState<any[]>([])
   const [timeFilter, setTimeFilter] = useState('all')
   const [showAllAnomalies, setShowAllAnomalies] = useState(false)
-  const [insights, setInsights] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string|null>(null)
 
@@ -61,16 +35,6 @@ export default function SpendLensPage() {
         if (!txRes.ok) throw new Error('Failed to fetch transactions')
         const txData = await txRes.json()
         setAllTransactions(txData.transactions || [])
-
-        const insRes = await fetch('/api/insights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
-        })
-        if (insRes.ok) {
-          const insData = await insRes.json()
-          setInsights(insData)
-        }
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -95,202 +59,218 @@ export default function SpendLensPage() {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(now.getDate() - 30)
     filteredTransactions = allTransactions.filter(t => new Date(t.date) >= thirtyDaysAgo)
-  } else if (timeFilter === 'this_year') {
-    filteredTransactions = allTransactions.filter(t => new Date(t.date).getFullYear() === now.getFullYear())
   }
 
-  const transactions = filteredTransactions
-
-  const categoryData = getCategoryBreakdown(transactions)
-  const dailyData = getDailySpend(transactions)
-  const anomalies = transactions.filter(t => t.is_anomaly)
-  const visibleAnomalies = showAllAnomalies ? anomalies : anomalies.slice(0, 5)
-  const subscriptions = transactions.filter(t => t.is_subscription)
+  const categoryData = getCategoryBreakdown(filteredTransactions)
+  const dailyData = getDailySpend(filteredTransactions)
+  const anomalies = filteredTransactions.filter(t => t.is_anomaly)
+  const subscriptions = filteredTransactions.filter(t => t.is_subscription)
+  const totalSpent = filteredTransactions
+    .filter(t => t.type === 'debit')
+    .reduce((s, t) => s + t.amount, 0)
 
   return (
-    <div className="p-6 space-y-6">
-      <BackButton href="/dashboard" />
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Eye className="w-6 h-6 text-violet-500"/>
+    <div className="flex flex-col gap-[20px]">
+      
+      {/* ── TOPBAR ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '12px',
+            background: 'var(--accent-primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)'
+          }}>
+            <Eye size={22} color="white" />
+          </div>
           <div>
-            <h1 className="text-2xl font-semibold">SpendLens</h1>
-            <p className="text-muted-foreground text-sm">
-              {transactions.length} transactions analyzed
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: '2px' }}>
+              SpendLens
+            </h1>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Deep-dive analysis of your spending habits
             </p>
           </div>
         </div>
         
-        <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select timeframe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Time</SelectItem>
-            <SelectItem value="last_30_days">Last 30 Days</SelectItem>
-            <SelectItem value="this_month">This Month</SelectItem>
-            <SelectItem value="this_year">This Year</SelectItem>
-          </SelectContent>
-        </Select>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <select 
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            style={{
+              padding: '8px 16px', borderRadius: '10px',
+              background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, outline: 'none'
+            }}
+          >
+            <option value="all">All Time</option>
+            <option value="last_30_days">Last 30 Days</option>
+            <option value="this_month">This Month</option>
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          label="Total Spent"
-          value={formatCurrency(
-            transactions
-              .filter(t => t.type === 'debit')
-              .reduce((s, t) => s + t.amount, 0)
-          )}
-          color="rose"
-        />
-        <StatCard
-          label="Categories"
-          value={categoryData.length.toString()}
-          color="violet"
-        />
-        <StatCard
-          label="Anomalies"
-          value={anomalies.length.toString()}
-          color={anomalies.length > 0 ? "red" : "green"}
-        />
+      {/* ── STATS GRID ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        {[
+          { label: 'Total Outflow', value: totalSpent, icon: TrendingDown, color: 'var(--expense-color)', bg: 'var(--expense-bg)' },
+          { label: 'Unique Categories', value: categoryData.length, icon: List, color: 'var(--accent-primary)', bg: 'var(--health-bg)' },
+          { label: 'Unusual Spends', value: anomalies.length, icon: AlertTriangle, color: 'var(--expense-color)', bg: 'var(--expense-bg)' },
+          { label: 'Avg Daily Spend', value: totalSpent / (dailyData.length || 1), icon: Calendar, color: 'var(--savings-color)', bg: 'var(--savings-bg)' },
+        ].map((s, i) => (
+          <div key={i} className="finn-card" style={{ padding: '20px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '10px',
+              background: s.bg, border: `1px solid ${s.color}20`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px'
+            }}>
+              <s.icon size={16} style={{ color: s.color }} />
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>{s.label}</div>
+            <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)' }}>
+              {typeof s.value === 'number' && s.value > 100 ? formatINRShort(s.value) : s.value}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card border rounded-xl p-6">
-          <h2 className="font-semibold mb-4">Spending by Category</h2>
-          <div className="h-64">
+      {/* ── CHARTS ROW ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px' }}>
+        
+        {/* Category Distribution */}
+        <div className="finn-card" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '20px' }}>
+            Category Distribution
+          </h3>
+          <div style={{ height: '220px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={categoryData}
                   cx="50%" cy="50%"
-                  innerRadius={60} outerRadius={100}
-                  paddingAngle={3}
+                  innerRadius={60} outerRadius={90}
+                  paddingAngle={5}
                   dataKey="amount"
+                >
+                  {categoryData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: 12, boxShadow: 'var(--card-shadow)', fontSize: '12px' }}
+                  formatter={(v: any) => formatINR(v)}
                 />
-                <Tooltip formatter={(val: any) => formatINR(Number(val))} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="space-y-2 mt-4">
-            {categoryData.slice(0, 6).map((cat: any) => (
-              <div key={cat.category} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ background: CATEGORY_COLORS[cat.category] || CHART_COLORS.primary }} />
-                  <span className="text-sm">{cat.category}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
+            {categoryData.slice(0, 4).map((cat: any, i: number) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: cat.color }} />
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>{cat.category}</span>
                 </div>
-                <span className="text-sm font-medium">{formatINR(cat.amount)}</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>{cat.percentage}%</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-card border rounded-xl p-6">
-          <h2 className="font-semibold mb-4">Daily Spending</h2>
-          <div className="h-[340px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyData}>
-                <XAxis 
-                  dataKey="date" 
-                  tick={{fontSize: 10, fill: '#64748b'}} 
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={10}
-                  tickFormatter={(str) => {
-                    const date = new Date(str)
-                    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-                  }}
-                />
-                <YAxis hide />
-                <Tooltip formatter={(val: any) => formatINR(Number(val))} />
-                <Bar dataKey="amount" radius={[4,4,0,0]} name="Spent">
-                  {dailyData.map((entry: any, index: number) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.hasAnomaly ? CHART_COLORS.danger : CHART_COLORS.primary} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Daily Activity */}
+        <div className="finn-card" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '20px' }}>
+            Daily Spending Activity
+          </h3>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={dailyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
+                axisLine={false} tickLine={false}
+                tickFormatter={(str) => new Date(str).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+              <Tooltip
+                cursor={{ fill: 'var(--bg-elevated)', opacity: 0.4 }}
+                contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: 12, boxShadow: 'var(--card-shadow)', fontSize: '12px' }}
+                formatter={(v: any) => formatINR(v)}
+              />
+              <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={12}>
+                {dailyData.map((entry: any, index: number) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={entry.hasAnomaly ? 'var(--expense-color)' : 'var(--accent-primary)'} 
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
+
       </div>
 
-      <div className="bg-card border rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <h2 className="font-semibold">Unusual Transactions</h2>
-          {anomalies.length > 0 && (
-            <span className="bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full font-medium">
-              {anomalies.length} found
+      {/* ── ALERTS & SUBSCRIPTIONS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        
+        {/* Alerts */}
+        <div className="finn-card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>Unusual Activity</h3>
+            <span style={{ fontSize: '11px', fontWeight: 700, background: 'var(--expense-bg)', color: 'var(--expense-color)', padding: '2px 8px', borderRadius: '6px' }}>
+              {anomalies.length} Alerts
             </span>
-          )}
-        </div>
-        {anomalies.length === 0 ? (
-          <div className="flex items-center gap-2 text-green-500">
-            <CheckCircle className="w-4 h-4"/>
-            <span className="text-sm">No unusual activity found</span>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {visibleAnomalies.map((t: any) => (
-              <div key={t.id} className="flex items-center justify-between p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">{t.description}</p>
-                  <p className="text-xs text-muted-foreground">{t.date} · {t.category}</p>
-                </div>
-                <span className="text-red-400 font-semibold">{formatINR(t.amount)}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {anomalies.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+                <CheckCircle size={32} style={{ color: 'var(--income-color)', opacity: 0.5, marginBottom: '12px' }} />
+                <p style={{ fontSize: '13px' }}>No unusual activity detected.</p>
               </div>
-            ))}
-            {anomalies.length > 5 && (
-              <button
-                onClick={() => setShowAllAnomalies(!showAllAnomalies)}
-                className="w-full py-2 text-sm text-red-400 hover:text-red-300 font-medium transition-colors border border-dashed border-red-500/30 rounded-lg"
-              >
-                {showAllAnomalies ? 'Show less' : `See more (${anomalies.length - 5} more)`}
-              </button>
+            ) : (
+              anomalies.slice(0, 4).map((t: any, i: number) => (
+                <div key={i} style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '12px', background: 'var(--bg-elevated)', borderRadius: '12px',
+                  border: '1px solid var(--border-subtle)'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>{t.description}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.date} · {t.category}</div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--expense-color)' }}>{formatINRShort(t.amount)}</div>
+                </div>
+              ))
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="bg-card border rounded-xl p-6">
-        <h2 className="font-semibold mb-4">
-          Active Subscriptions
-          <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {formatINR(subscriptions.reduce((s, t) => s + t.amount, 0))}/mo total
-          </span>
-        </h2>
-        {subscriptions.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No subscriptions detected</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {subscriptions.map((t: any) => (
-              <div key={t.id} className="p-3 bg-background border rounded-lg">
-                <p className="font-medium text-sm truncate">{t.description}</p>
-                <p className="text-violet-400 font-semibold text-sm mt-1">{formatINR(t.amount)}</p>
-                <p className="text-xs text-muted-foreground">{t.date}</p>
+        {/* Subscriptions */}
+        <div className="finn-card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>Recurring Payments</h3>
+            <span style={{ fontSize: '11px', fontWeight: 700, background: 'var(--health-bg)', color: 'var(--health-color)', padding: '2px 8px', borderRadius: '6px' }}>
+              {subscriptions.length} Found
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            {subscriptions.slice(0, 6).map((t: any, i: number) => (
+              <div key={i} style={{ 
+                padding: '12px', background: 'var(--bg-elevated)', borderRadius: '12px',
+                border: '1px solid var(--border-subtle)'
+              }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t.description}
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent-primary)' }}>{formatINRShort(t.amount)}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>{t.date}</div>
               </div>
             ))}
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
+        </div>
 
-function StatCard({ label, value, color }: { label: string, value: string, color: string }) {
-  const colorMap: Record<string, string> = {
-    rose: 'text-rose-500',
-    violet: 'text-violet-500',
-    red: 'text-red-500',
-    green: 'text-emerald-500'
-  }
-  return (
-    <div className="bg-card border rounded-xl p-4">
-      <p className="text-sm text-muted-foreground mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${colorMap[color] || 'text-foreground'}`}>{value}</p>
+      </div>
+
     </div>
   )
 }
@@ -298,13 +278,13 @@ function StatCard({ label, value, color }: { label: string, value: string, color
 function SpendLensSkeleton() {
   return (
     <div className="p-6 space-y-6 animate-pulse">
-      <div className="h-8 bg-muted rounded w-48"/>
-      <div className="grid grid-cols-3 gap-4">
-        {[1,2,3].map(i => <div key={i} className="h-24 bg-muted rounded-xl"/>)}
+      <div className="h-10 w-48 bg-muted rounded-xl"/>
+      <div className="grid grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <div key={i} className="h-20 bg-muted rounded-xl"/>)}
       </div>
       <div className="grid grid-cols-2 gap-6">
-        <div className="h-80 bg-muted rounded-xl"/>
-        <div className="h-80 bg-muted rounded-xl"/>
+        <div className="h-80 bg-muted rounded-2xl"/>
+        <div className="h-80 bg-muted rounded-2xl"/>
       </div>
     </div>
   )
@@ -312,21 +292,31 @@ function SpendLensSkeleton() {
 
 function ErrorState({ error }: { error: string }) {
   return (
-    <div className="p-6 flex flex-col items-center justify-center h-[60vh] text-center">
-      <p className="text-red-500 font-medium">Something went wrong</p>
-      <p className="text-muted-foreground text-sm mt-1">{error}</p>
-      <button onClick={() => window.location.reload()} className="mt-4 text-violet-600 hover:underline">Try again</button>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <AlertTriangle size={48} color="var(--expense-color)" style={{ marginBottom: '16px' }} />
+      <p style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Analysis Failed</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{error}</p>
     </div>
   )
 }
 
 function EmptyState() {
   return (
-    <div className="p-6 flex flex-col items-center justify-center h-[60vh] text-center">
-      <div className="p-4 rounded-full bg-muted mb-4"><Eye className="h-10 w-10 text-muted-foreground" /></div>
-      <p className="font-medium">No transactions found</p>
-      <p className="text-muted-foreground text-sm mt-1">Upload your bank statement to see your spending analytics.</p>
-      <a href="/onboarding" className="mt-6 px-6 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">Upload Statement</a>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <Eye size={64} className="text-muted/20 mb-4" />
+      <h3 style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '8px' }}>No Activity Seen</h3>
+      <p style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '300px', marginBottom: '24px' }}>
+        Upload your bank statement to see your spending analytics through the SpendLens.
+      </p>
+      <Link href="/onboarding">
+        <button style={{
+          padding: '12px 24px', borderRadius: '12px',
+          background: 'var(--accent-primary)', color: '#ffffff',
+          fontWeight: 700, border: 'none', cursor: 'pointer'
+        }}>
+          Upload Statement
+        </button>
+      </Link>
     </div>
   )
 }
@@ -341,12 +331,14 @@ function getCategoryBreakdown(transactions: any[]) {
     grouped[cat] = (grouped[cat] || 0) + t.amount
   })
   
+  const colors = ['#7c3aed', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6']
+  
   return Object.entries(grouped)
-    .map(([category, amount]) => ({
+    .map(([category, amount], index) => ({
       category,
-      amount: Math.round(amount * 100) / 100,
+      amount,
       percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
-      fill: CATEGORY_COLORS[category] || CHART_COLORS.primary
+      color: colors[index % colors.length]
     }))
     .sort((a, b) => b.amount - a.amount)
 }
@@ -367,8 +359,4 @@ function getDailySpend(transactions: any[]) {
   return Object.entries(grouped)
     .map(([date, vals]) => ({ date, amount: vals.amount, hasAnomaly: vals.hasAnomaly }))
     .sort((a, b) => a.date.localeCompare(b.date))
-}
-
-function formatCurrency(amount: number): string {
-  return formatINR(amount)
 }

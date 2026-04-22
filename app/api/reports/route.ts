@@ -76,6 +76,24 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, number>)
 
+    // Monthly trend — group transactions by month
+    const monthlyTrend = transactions.reduce((acc: any[], tx: any) => {
+      const month = tx.date?.slice(0, 7); // "YYYY-MM"
+      if (!month) return acc;
+      let entry = acc.find(e => e.month === month);
+      if (!entry) { entry = { month, income: 0, expenses: 0 }; acc.push(entry); }
+      if (tx.amount > 0) entry.income += tx.amount;
+      else entry.expenses += Math.abs(tx.amount);
+      return acc;
+    }, []).sort((a, b) => a.month.localeCompare(b.month));
+
+    // Highlights
+    const savingsMonths = monthlyTrend.map(m => ({ month: m.month, savings: m.income - m.expenses }));
+    const bestSavings = savingsMonths.sort((a, b) => b.savings - a.savings)[0] || null;
+    const worstSpend = [...monthlyTrend].sort((a, b) => b.expenses - a.expenses)[0] || null;
+    const biggestTx = [...transactions].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0] || null;
+    const highlights = { bestSavingsMonth: bestSavings, worstSpendMonth: worstSpend, biggestTransaction: biggestTx };
+
     return NextResponse.json({
       success: true,
       report: {
@@ -111,7 +129,10 @@ export async function GET(request: NextRequest) {
           expenseChange,
           savingsChange
         }
-      }
+      },
+      topCategories,
+      monthlyTrend,
+      highlights
     })
 
   } catch (error) {
