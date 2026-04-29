@@ -9,7 +9,7 @@ import {
 import {
   PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid
+  CartesianGrid, ReferenceLine
 } from 'recharts'
 import { formatINR } from '@/lib/utils'
 import Link from 'next/link'
@@ -206,11 +206,61 @@ export default function SpendLensPage() {
 
         {/* Daily Activity */}
         <div className="finn-card" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '20px' }}>
-            Daily Spending Activity
-          </h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={dailyData}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '3px' }}>
+                Daily Spending Activity
+              </h3>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Every day you spent money — visualised</p>
+            </div>
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#a855f7' }} />
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Normal day</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f87171' }} />
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Anomaly detected</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '16px', height: '2px', background: '#fbbf24', borderRadius: '1px', borderTop: '2px dashed #fbbf24' }} />
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Daily avg</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mini stats row */}
+          {(() => {
+            const avgDaily = dailyData.length > 0 ? totalSpent / dailyData.length : 0
+            const peakDay = dailyData.length > 0 ? [...dailyData].sort((a: any, b: any) => b.amount - a.amount)[0] : null
+            const anomalyDays = dailyData.filter((d: any) => d.hasAnomaly).length
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+                {[
+                  { label: 'Peak Day', value: peakDay ? `₹${Math.round(peakDay.amount).toLocaleString('en-IN')}` : '—', sub: peakDay?.date || '', color: '#a855f7', icon: '📈' },
+                  { label: 'Daily Average', value: `₹${Math.round(avgDaily).toLocaleString('en-IN')}`, sub: 'per spending day', color: '#fbbf24', icon: '📊' },
+                  { label: 'Anomaly Days', value: `${anomalyDays}`, sub: `out of ${dailyData.length} days`, color: anomalyDays > 0 ? '#f87171' : '#34d399', icon: anomalyDays > 0 ? '⚠️' : '✅' },
+                ].map((s, i) => (
+                  <div key={i} style={{
+                    padding: '10px 14px', borderRadius: '12px',
+                    background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)',
+                    display: 'flex', alignItems: 'center', gap: '10px'
+                  }}>
+                    <span style={{ fontSize: '18px' }}>{s.icon}</span>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: s.color }}>{s.value}</div>
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={dailyData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
               <XAxis
                 dataKey="date"
@@ -218,26 +268,51 @@ export default function SpendLensPage() {
                 axisLine={false}
                 tickLine={false}
                 interval={Math.floor((dailyData?.length || 30) / 8)}
+                tickFormatter={(d) => {
+                  const date = new Date(d)
+                  return `${date.getDate()} ${date.toLocaleString('en-IN', { month: 'short' })}`
+                }}
               />
               <YAxis
                 tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={v => `₹${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`}
-                width={42}
+                width={44}
+              />
+              <ReferenceLine
+                y={dailyData.length > 0 ? totalSpent / dailyData.length : 0}
+                stroke="#fbbf24"
+                strokeDasharray="5 3"
+                strokeWidth={1.5}
+                label={{
+                  value: 'Avg',
+                  position: 'insideTopRight',
+                  fill: '#fbbf24',
+                  fontSize: 9,
+                  fontWeight: 700
+                }}
               />
               <Tooltip
                 cursor={{ fill: 'rgba(168,85,247,0.08)' }}
                 contentStyle={{ background: '#1a1530', border: '1px solid rgba(168,85,247,0.25)', borderRadius: '10px', color: '#f5f3ff', fontSize: '11px', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
                 labelStyle={{ color: '#f5f3ff', fontWeight: 700, marginBottom: '4px' }}
                 itemStyle={{ color: '#a09abf' }}
-                formatter={(v: any) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Spent']}
+                labelFormatter={(d) => {
+                  const date = new Date(d)
+                  return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                }}
+                formatter={(v: any, _: any, props: any) => [
+                  `₹${Number(v).toLocaleString('en-IN')}`,
+                  props.payload?.hasAnomaly ? '⚠️ Anomaly Day' : 'Amount Spent'
+                ]}
               />
-              <Bar dataKey="amount" fill="#a855f7" radius={[3, 3, 0, 0]} maxBarSize={12}>
+              <Bar dataKey="amount" radius={[3, 3, 0, 0]} maxBarSize={10}>
                 {dailyData.map((entry: any, index: number) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.hasAnomaly ? 'var(--expense-color)' : '#a855f7'}
+                    fill={entry.hasAnomaly ? '#f87171' : '#a855f7'}
+                    fillOpacity={entry.hasAnomaly ? 1 : 0.85}
                   />
                 ))}
               </Bar>
