@@ -110,8 +110,8 @@ export function Sidebar() {
     <div style={{
       width: '220px',
       height: '100vh',
-      background: 'var(--sidebar-bg, #080512)',
-      borderRight: '1px solid rgba(168,85,247,0.08)',
+      background: 'var(--sidebar-bg)',
+      borderRight: '1px solid var(--border-subtle)',
       display: 'flex',
       flexDirection: 'column',
       flexShrink: 0,
@@ -123,7 +123,7 @@ export function Sidebar() {
       {/* ── LOGO ── */}
       <div style={{
         padding: '18px 16px 14px',
-        borderBottom: '1px solid rgba(168,85,247,0.08)',
+        borderBottom: '1px solid var(--border-subtle)',
         flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -137,13 +137,10 @@ export function Sidebar() {
           }}>F</div>
           <div>
             <div style={{
-              fontSize: '15px', fontWeight: 900,
-              background: 'linear-gradient(135deg, #ddd6fe, #c084fc)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              fontSize: '16px', fontWeight: 900, color: 'var(--text-primary)',
               letterSpacing: '-0.3px'
             }}>FINN</div>
-            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>
+            <div style={{ fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
               Your Personal CFO
             </div>
           </div>
@@ -181,7 +178,7 @@ export function Sidebar() {
                 {/* Section color dot */}
                 <div style={{
                   width: '6px', height: '6px', borderRadius: '50%',
-                  background: hasActive ? section.color : 'rgba(255,255,255,0.2)',
+                  background: hasActive ? section.color : 'var(--border-strong)',
                   boxShadow: hasActive ? `0 0 6px ${section.color}` : 'none',
                   flexShrink: 0,
                   transition: 'all 0.2s'
@@ -192,7 +189,7 @@ export function Sidebar() {
                   flex: 1,
                   fontSize: '10px',
                   fontWeight: 700,
-                  color: hasActive ? section.color : 'rgba(255,255,255,0.3)',
+                  color: hasActive ? section.color : 'var(--text-muted)',
                   letterSpacing: '1.5px',
                   textTransform: 'uppercase',
                   textAlign: 'left',
@@ -205,7 +202,7 @@ export function Sidebar() {
                 <div style={{
                   transition: 'transform 0.2s',
                   transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  color: 'rgba(255,255,255,0.2)'
+                  color: 'var(--text-muted)'
                 }}>
                   <ChevronDown size={12} />
                 </div>
@@ -250,15 +247,15 @@ export function Sidebar() {
                         <div style={{
                           width: '26px', height: '26px',
                           borderRadius: '7px',
-                          background: isActive ? `${item.color}18` : 'rgba(255,255,255,0.04)',
-                          border: `1px solid ${isActive ? item.color + '30' : 'rgba(255,255,255,0.05)'}`,
+                          background: isActive ? `${item.color}18` : 'var(--bg-elevated)',
+                          border: `1px solid ${isActive ? item.color + '30' : 'var(--border-subtle)'}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           flexShrink: 0, transition: 'all 0.15s'
                         }}>
                           <Icon
                             size={12}
                             style={{
-                              color: isActive ? item.color : 'rgba(255,255,255,0.3)',
+                              color: isActive ? item.color : 'var(--text-muted)',
                               transition: 'color 0.15s'
                             }}
                           />
@@ -267,8 +264,8 @@ export function Sidebar() {
                         {/* Label */}
                         <span style={{
                           fontSize: '12px',
-                          fontWeight: isActive ? 700 : 400,
-                          color: isActive ? item.color : 'rgba(255,255,255,0.4)',
+                          fontWeight: isActive ? 700 : 500,
+                          color: isActive ? item.color : 'var(--text-secondary)',
                           whiteSpace: 'nowrap',
                           transition: 'all 0.15s'
                         }}>
@@ -303,7 +300,7 @@ export function Sidebar() {
       {/* ── BOTTOM ACTIONS ── */}
       <div style={{
         padding: '8px',
-        borderTop: '1px solid rgba(168,85,247,0.08)',
+        borderTop: '1px solid var(--border-subtle)',
         flexShrink: 0
       }}>
         {/* Re-upload button */}
@@ -311,8 +308,8 @@ export function Sidebar() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '9px 12px', borderRadius: '10px',
-            background: 'rgba(168,85,247,0.08)',
-            border: '1px solid rgba(168,85,247,0.15)',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
             cursor: 'pointer', marginBottom: '6px',
             transition: 'all 0.2s'
           }}>
@@ -323,7 +320,7 @@ export function Sidebar() {
             }}>
               <Upload size={11} color="#a855f7" />
             </div>
-            <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(168,85,247,0.8)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
               Re-upload Statement
             </span>
           </div>
@@ -336,8 +333,8 @@ export function Sidebar() {
             width: '100%',
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '9px 12px', borderRadius: '10px',
-            background: 'rgba(248,113,113,0.06)',
-            border: '1px solid rgba(248,113,113,0.12)',
+            background: 'var(--expense-bg)',
+            border: '1px solid var(--expense-border)',
             cursor: 'pointer', marginBottom: '8px',
             transition: 'all 0.2s'
           }}
@@ -349,7 +346,7 @@ export function Sidebar() {
           }}>
             <Trash2 size={11} color="#f87171" />
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(248,113,113,0.7)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--expense-color)' }}>
             Clear All Data
           </span>
         </button>
@@ -358,8 +355,8 @@ export function Sidebar() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '10px 12px', borderRadius: '10px',
-          background: 'rgba(168,85,247,0.06)',
-          border: '1px solid rgba(168,85,247,0.12)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-subtle)',
           position: 'relative'
         }}>
           <div style={{
@@ -373,12 +370,12 @@ export function Sidebar() {
           <div style={{ overflow: 'hidden', flex: 1 }}>
             <div style={{
               fontSize: '11px', fontWeight: 700,
-              color: 'rgba(255,255,255,0.8)',
+              color: 'var(--text-primary)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
             }}>
               {user?.email?.split('@')[0] || 'User'}
             </div>
-            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
               {user?.email}
             </div>
           </div>
@@ -386,7 +383,7 @@ export function Sidebar() {
             onClick={() => signOut()}
             style={{ 
               background: 'transparent', border: 'none', cursor: 'pointer',
-              color: 'rgba(255,255,255,0.3)', padding: '4px'
+              color: 'var(--text-muted)', padding: '4px'
             }}
           >
             <LogOut size={14} />
