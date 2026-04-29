@@ -164,7 +164,7 @@ export default function SpendLensPage() {
               const miscAmount = withoutOthers.slice(7).reduce((s: number, c: any) => s + c.amount, 0)
               pieData = [
                 ...top7.map((c: any) => ({ ...c, percentage: (c.amount / totalAmt) * 100 })),
-                ...(miscAmount > 0 ? [{ category: 'Others', amount: miscAmount + (othersItem?.amount || 0), percentage: ((miscAmount + (othersItem?.amount || 0)) / totalAmt) * 100 }] : [])
+                ...((miscAmount > 0 || othersItem) ? [{ category: 'Others', amount: miscAmount + (othersItem?.amount || 0), percentage: ((miscAmount + (othersItem?.amount || 0)) / totalAmt) * 100 }] : [])
               ]
             }
           } else {
