@@ -1,462 +1,527 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/FINN-Your%20Personal%20CFO-8b5cf6?style=for-the-badge&labelColor=0a0a0a" alt="FINN"/>
+<!-- HERO BANNER ASCII -->
+███████╗██╗███╗   ██╗███╗   ██╗
+██╔════╝██║████╗  ██║████╗  ██║
+█████╗  ██║██╔██╗ ██║██╔██╗ ██║
+██╔══╝  ██║██║╚██╗██║██║╚██╗██║
+██║     ██║██║ ╚████║██║ ╚████║
+╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝
 
-# 🧠 FINN
+### Your Personal CFO — Powered by AI
 
-### *Your Money. Understood. Predicted. Optimized. Mastered.*
-
-**An AI-powered financial brain that transforms how everyday people understand their money.**
-
-<br/>
-
-![Next.js](https://img.shields.io/badge/Next.js-16.2-000000?style=flat-square&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat-square&logo=typescript)
-![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ecf8e?style=flat-square&logo=supabase)
-![Gemini](https://img.shields.io/badge/Gemini-2.0%20Flash-4285f4?style=flat-square&logo=google)
-![Tailwind](https://img.shields.io/badge/Tailwind-CSS-06b6d4?style=flat-square&logo=tailwindcss)
-![Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?style=flat-square&logo=vercel)
-
-<br/>
-
-[🚀 Live Demo](https://finn.vercel.app) · [📹 Video Demo](#) · [🏆 VoidHack April 2026](#)
-
-<br/>
+*Upload your bank statement. Get a CFO-level financial briefing. Instantly.*
 
 ---
+
+<!-- BADGES -->
+![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
+![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase)
+![Gemini AI](https://img.shields.io/badge/Gemini-AI-purple?style=for-the-badge&logo=google)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8?style=for-the-badge&logo=tailwindcss)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+
+---
+
+**Built for VoidHack April 2026** · Theme: *Intelligent Financial Analytics*
+
+[🚀 Live Demo](https://finn-alpha-eight.vercel.app) · [📹 Demo Video](https://www.loom.com/share/1ba2d33b784746208f3390ca7a4546ce) · [🐛 Report Bug](#) · [💡 Request Feature](#)
 
 </div>
 
-## 💡 The Problem
+---
 
-> Most people are **financially blind**.
->
-> They don't know where their money goes.  
-> They can't predict problems before they happen.  
-> Existing tools are too complicated to actually use.
+## 🧠 The Problem
 
-**Rich people have CFOs.** Everyone else gets a spreadsheet and a prayer.
+> *"Most people have no idea where their money actually goes."*
 
-## ✨ The Solution
+In India alone, millions of salaried individuals receive bank statements every month — and do nothing with them. The data exists. The insights don't.
 
-**FINN is a CFO for normal people.** Upload a bank statement. Get an AI-powered financial brain that actually understands your money — in **30 seconds**, completely **free**.
+Existing finance apps require **manual expense logging**. Nobody does that. It lasts three days and then you give up.
 
-<br/>
+**FINN solves this differently.**
 
-<div align="center">
+Upload your bank statement once → FINN reads every transaction → You get the analysis a CFO would give you.
 
-```
- ┌─────────────────────────────────────────────┐
- │                                             │
- │   📄 Upload Statement                       │
- │         ↓                                   │
- │   🧠 AI Engines Analyze                     │
- │         ↓                                   │
- │   ✨ Get Personalized Insights              │
- │                                             │
- └─────────────────────────────────────────────┘
-```
-
-</div>
-
-<br/>
+No manual entry. No spreadsheets. No accountants.
 
 ---
 
-## 🎯 Comprehensive Financial Suite
+## ✨ What Makes FINN Different
 
-FINN provides a complete ecosystem of tools to analyze, protect, and grow your wealth.
-
-### 📊 Analysis Core
-<table>
-<tr>
-<td width="50%">
-
-### 👁️ SpendLens & Merchants
-**See every rupee clearly.**
-
-Auto-categorize transactions across 13+ categories. Deep dive into merchant-specific spending habits and track Z-score anomalies.
-
-`13+ categories` · `Merchant tracking` · `Anomaly alerts`
-</td>
-<td width="50%">
-
-### 📈 CashFlow & Compare
-**Understand your financial momentum.**
-
-Compare spending month-over-month. Forecast upcoming crunches with 30-day moving averages and regression models.
-
-`30-day forecasts` · `MoM Comparisons` · `Trend analysis`
-</td>
-</tr>
-</table>
-
-### 🛡️ Protection & Planning
-<table>
-<tr>
-<td width="50%">
-
-### 💧 Money Leaks & Subscriptions
-**Plug the holes in your wallet.**
-
-Identify forgotten recurring charges, hidden fees, and impulse purchases before they drain your accounts.
-
-`Subscription tracker` · `Fee detection` · `Impulse analysis`
-</td>
-<td width="50%">
-
-### ⚖️ 50/30/20 & Budgeting
-**Automated financial discipline.**
-
-Instantly see how your spending aligns with the golden 50/30/20 rule (Needs/Wants/Savings) without manual math.
-
-`Zero-based budgeting` · `Rule compliance` · `Expense splitting`
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### ⏳ Runway & Bills
-**Know exactly how long you can survive.**
-
-Calculate your financial runway based on current liquid assets and burn rate. Never miss an EMI with smart bill tracking.
-
-`Burn rate analysis` · `EMI tracking` · `Survival metrics`
-</td>
-<td width="50%">
-
-### 📅 Calendar & Goals
-**Time-based financial planning.**
-
-Visualize cash flow on a daily calendar view. Set, track, and predict completion dates for your financial goals.
-
-`Heatmap calendar` · `Goal prediction` · `Tax estimations`
-</td>
-</tr>
-</table>
-
-### 🤖 AI Intelligence
-<table>
-<tr>
-<td width="50%">
-
-### 💬 FINN Chat
-**Talk to your finances.**
-
-Ask anything in plain language. FINN knows YOUR data and gives specific, personalized answers powered by Gemini 2.0.
-
-`Natural language` · `Context-aware` · `Instant answers`
-</td>
-<td width="50%">
-
-### 🧠 AI Brain & Personality
-**Your financial psyche.**
-
-Discover if you're a Weekend Warrior 🎉 or a Steady Saver 🏦. Get weekly personalized AI nudges and CFO memos.
-
-`6 personality types` · `Weekly nudges` · `Health score`
-</td>
-</tr>
-</table>
-
-<br/>
+| Traditional Finance Apps | FINN |
+|---|---|
+| Manual expense logging | Auto-parsed from your bank statement |
+| Generic pie charts | AI-generated CFO memo |
+| Basic categorisation | Anomaly detection + leak scanning |
+| Static dashboards | Multi-month intelligence |
+| No financial advice | Gemini-powered personalised insights |
 
 ---
 
-## 🌍 Works Everywhere
-
-### Supports 50+ Bank Formats Worldwide
-
-<div align="center">
-
-| 🇮🇳 **India** | 🇺🇸 **USA** | 🇬🇧 **UK** | 🇪🇺 **Europe** |
-|:---:|:---:|:---:|:---:|
-| SBI · HDFC · ICICI | Chase · Wells Fargo | Barclays · HSBC | Deutsche Bank |
-| Axis · Kotak · Paytm | Bank of America | Lloyds · Monzo | BNP Paribas |
-| PhonePe · GPay | Citibank | Revolut | ING · Santander |
-
-| 🇦🇺 **Australia** | 🇨🇦 **Canada** | 🇸🇬 **Asia** | 🇦🇪 **Middle East** |
-|:---:|:---:|:---:|:---:|
-| CommBank · ANZ | TD Bank · RBC | DBS · OCBC | Emirates NBD |
-| NAB · Westpac | Scotiabank | Maybank · HSBC SG | ADCB · FAB |
-
-</div>
-
-**Not listed?** FINN has a generic AI-powered parser that works with any bank statement. Just upload and go.
-
-<br/>
-
----
-
-## 🎨 See It In Action
-
-<div align="center">
-
-### 🏠 Landing Page
-*Immersive hero with cursor glow, animated grid, floating particles, typewriter headline, and live dashboard preview.*
-
-### 📊 Dashboard  
-*Instant loading with granular skeletons, animated health score ring, AI-powered insights, personality card, weekly nudges, and stat counters.*
-
-### 👁️ SpendLens
-*Interactive donut chart, daily spending timeline, anomaly alerts, and subscription tracker.*
-
-### 📈 CashFlow Copilot
-*30-day prediction area chart, upcoming alerts, savings forecasts, and trend indicators. Ultra-fast performance using Map-based data lookups.*
-
-### 💬 FINN Chat
-*Real-time AI conversation with typing indicators, suggested queries, and chat history.*
+## 🚀 Features
 
 ### 🧠 AI Brain
-*4 immersive tabs — Overview, Personality (all 6 types), Insights, and Weekly Nudges with score breakdown.*
+> *The intelligence layer — powered by Google Gemini*
 
-### 📑 Reports & Memos
-*Monthly CFO Memos, automatically generated by AI to compare your financial health month-over-month.*
+- **Financial Health Score** (0–100) with Grade A–F
+- **Financial Personality** — Impulse Spender, Mindful Saver, Strategic Investor
+- **AI Insights** — up to 3 specific, data-backed observations
+- **Anomaly Detection** — unusual transactions flagged automatically
+- **Subscription Detection** — every recurring charge identified
+- **Weekly Nudge** — one actionable tip based on your real numbers
 
-</div>
-
-<br/>
+```
+Health Score: 35/100 · Grade D
+Personality: Impulse Spender
+Insight: Savings rate at 0.1% — critically low
+Nudge: Apply 24-hour rule for purchases over ₹2,000
+```
 
 ---
 
-## ⚡ Tech Stack
+### 🔀 Month vs Month Comparison
+> *CFO-level verdict on any two months*
 
-<div align="center">
+- Select any two months from uploaded statements
+- Get income, expense, savings delta with exact ₹ amounts
+- AI-generated **CFO Memo** — written like a real financial advisor
+- Category-level breakdown — what went up, what went down
+- New merchants detected vs merchants you stopped using
+- Verdict: **Better / Worse / Stable** with a financial score
 
-### Frontend
-![Next.js](https://img.shields.io/badge/Next.js%2016.2-App%20Router-black?style=for-the-badge&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-Type%20Safe-3178c6?style=for-the-badge&logo=typescript)
-![Tailwind](https://img.shields.io/badge/TailwindCSS-Styling-06b6d4?style=for-the-badge&logo=tailwindcss)
-![Framer](https://img.shields.io/badge/Framer%20Motion-Animations-ff0080?style=for-the-badge&logo=framer)
+```
+CFO Verdict: Improved ↑ (Score: 78/100)
+"While income declined by ₹18,618, a substantial
+reduction in expenses by ₹25,273 successfully
+pivoted the savings rate from -7.3% to +6.0%..."
+```
 
-### Backend & AI
-![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ecf8e?style=for-the-badge&logo=supabase)
-![Gemini](https://img.shields.io/badge/Gemini%202.0-Flash-4285f4?style=for-the-badge&logo=google)
-![Recharts](https://img.shields.io/badge/Recharts-Data%20Viz-ff7300?style=for-the-badge)
+---
 
-### UI & Components
-![shadcn](https://img.shields.io/badge/shadcn/ui-Components-000000?style=for-the-badge)
-![Radix](https://img.shields.io/badge/Radix-Primitives-161618?style=for-the-badge)
-![Lucide](https://img.shields.io/badge/Lucide-Icons-f56565?style=for-the-badge)
+### 📅 Financial Calendar
+> *See your money day by day*
 
-</div>
+- GitHub-style **heatmap** — every day colour-coded by spend intensity
+- Click any date → see every transaction that day
+- **Pattern Detection** — "You spend 3x more on Fridays"
+- Post-salary spike detection
+- Zero-spend day tracking
+- Day-of-week spend bar chart
 
-<br/>
+---
+
+### 💧 Money Leaks Detector
+> *The feature that shocks everyone*
+
+Automatically scans all transactions for:
+- 🏦 Bank charges and SMS fees
+- ⚠️ Late payment penalties and bounce charges
+- 💱 Forex markup and convenience fees
+- 🔄 Forgotten subscriptions
+
+```
+Total Leaked: ₹2,340
+├── Bank Fees: ₹840
+├── Penalties: ₹1,200
+└── Hidden Charges: ₹300
+```
+
+---
+
+### 👁️ SpendLens
+> *Deep dive into your spending categories*
+
+- Interactive pie chart with category breakdown
+- Top spending categories ranked
+- Category trend over time
+- Filter by month or date range
+
+---
+
+### 📈 CashFlow Copilot
+> *AI-powered financial forecasting*
+
+- Predicted income for next 30 days
+- Predicted spend for next 30 days
+- Cash crunch alerts
+- Trend analysis: Improving / Stable / Declining
+- Day-by-day income vs expense chart
+
+---
+
+### 🛡️ Cash Flow Runway
+> *The most important number in your financial life*
+
+**"If your income stopped today — how many months can you survive?"**
+
+- Calculated from your real detectable savings
+- Based on average monthly expenses
+- Status: Critical / Warning / Good / Excellent
+- Actionable gap analysis — how much extra to save monthly to hit 6-month runway
+
+```
+Current Runway: 0.3 months ⚠️ Critical
+Target: 6 months
+To reach target in 12 months: Save ₹8,400 extra/month
+```
+
+---
+
+### 🎯 50/30/20 Budget Check
+> *The golden ratio for your finances*
+
+Maps every transaction to three buckets:
+- **50% Needs** — Rent, groceries, utilities, transport
+- **30% Wants** — Dining, entertainment, shopping
+- **20% Savings** — Investments, SIPs, PPF
+
+Shows your actual split vs ideal — with one specific recommendation to close the gap.
+
+---
+
+### 🧾 Bills & EMI Tracker
+> *Never be surprised by a bill again*
+
+- Auto-detects recurring payments from statement history
+- Confirm and label your bills
+- EMI countdown — "Your car loan ends in 3 months 🎉"
+- Alerts when bills increase month-over-month
+- Monthly commitment total
+
+---
+
+### 🏪 Merchant Intelligence
+> *Every place you spend — analysed*
+
+- Total spent, visit count, average per visit
+- First seen vs last seen
+- Monthly spend trend per merchant
+- Trend classification: Increasing / Decreasing / Stable
+
+```
+Swiggy: ₹12,400 across 26 visits
+Average per order: ₹476
+Frequency: Every 3.5 days
+Trend: ↑ Increasing
+```
+
+---
+
+### 🎪 Goal Tracker
+> *Save with purpose*
+
+- Set goals with target amount and date
+- FINN auto-tracks progress from every uploaded statement
+- Projected completion date based on savings rate
+- On-track / Behind-schedule indicator
+- Quick add buttons: +₹1k / +₹5k / +₹10k
+
+---
+
+### 📋 Tax Readiness
+> *Know your score before filing*
+
+Auto-detects from your transactions:
+- 80C investments (LIC, PPF, ELSS, NPS)
+- HRA-eligible rent payments
+- Home loan interest (Section 24)
+- Health insurance premiums (80D)
+- Professional/business expenses
+
+```
+Tax Readiness Score: 45/100
+✅ 80C detected: ₹42,000 (28% of limit)
+✅ Health Insurance detected
+❌ NPS not found
+❌ HRA rent not detected
+```
+
+> ⚠️ Disclaimer: This is not tax advice. Consult a CA before filing.
+
+---
+
+### 💬 FINN Chat
+> *Ask your finances anything*
+
+Powered by Gemini AI. Ask in plain English:
+- *"Where did I spend the most last month?"*
+- *"Am I on track to save ₹50,000 by August?"*
+- *"What's my biggest unnecessary expense?"*
+
+Responds with your actual data — not generic advice.
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-  ┌────────────────────────────────────────────────────────┐
-  │                   FRONTEND (Next.js)                    │
-  │                                                         │
-  │   Landing · Login · Dashboard · Brain · SpendLens      │
-  │   CashFlow · Chat · Reports · Onboarding               │
-  └────────────────────────┬───────────────────────────────┘
-                           │
-                           ▼
-  ┌────────────────────────────────────────────────────────┐
-  │                  API LAYER (Route Handlers)             │
-  │                                                         │
-  │   /api/upload    /api/insights    /api/chat            │
-  │   /api/transactions    /api/cashflow    /api/reports   │
-  └─────┬──────────────────────────────────────────────┬───┘
-        │                                              │
-        ▼                                              ▼
-  ┌──────────────┐                          ┌─────────────────┐
-  │   ENGINES    │                          │   AI LAYER      │
-  │              │                          │                 │
-  │ Categorizer  │                          │  Gemini 2.0     │
-  │ Anomaly      │       ┌────────┐         │  Flash          │
-  │ Subscription │──────▶│ STATS  │────────▶│       +         │
-  │ Predictor    │       └────────┘         │  Rule-based     │
-  │ Personality  │                          │  Fallback       │
-  │ Scorer       │                          │       +         │
-  └──────────────┘                          │  Smart Cache    │
-                                            └────────┬────────┘
-                                                     │
-                                                     ▼
-                                          ┌──────────────────┐
-                                          │   SUPABASE       │
-                                          │                  │
-                                          │  profiles        │
-                                          │  transactions    │
-                                          │  insights        │
-                                          │  chat_history    │
-                                          │  cashflow        │
-                                          │  reports         │
-                                          └──────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                    FINN Frontend                     │
+│          Next.js 16.2 · App Router · TypeScript      │
+├──────────────────────┬──────────────────────────────┤
+│   Dashboard Layer    │        AI Layer               │
+│   • Recharts         │   • Gemini 2.5 Flash          │
+│   • Framer Motion    │   • Gemini 3 Flash Preview    │
+│   • TailwindCSS 4    │   • Gemini 2.0 Flash          │
+│   • shadcn/ui        │   • 3-Model Fallback Chain    │
+├──────────────────────┴──────────────────────────────┤
+│                   API Layer                          │
+│   /api/upload  /api/insights  /api/compare           │
+│   /api/calendar  /api/leaks  /api/merchants          │
+│   /api/bills  /api/goals  /api/tax  /api/runway      │
+├─────────────────────────────────────────────────────┤
+│                  Data Layer                          │
+│              Supabase · PostgreSQL                   │
+│   statements · transactions · comparisons            │
+│   goals · goal_progress · recurring_bills            │
+│   merchant_profiles · insights · cashflow            │
+└─────────────────────────────────────────────────────┘
 ```
 
-<br/>
+---
+
+## 🗄️ Database Schema
+
+```sql
+statements          -- One record per uploaded month
+transactions        -- Every transaction with month/merchant tags
+comparisons         -- Cached month-vs-month results
+goals               -- User savings goals
+goal_progress       -- Monthly goal progress snapshots
+recurring_bills     -- Confirmed recurring payments
+merchant_profiles   -- Aggregated merchant intelligence
+insights            -- Cached AI analysis results
+cashflow            -- Predicted cashflow data
+chat_history        -- FINN Chat conversation history
+```
 
 ---
 
-## 🧠 The AI Strategy
+## ⚡ Tech Stack
 
-FINN uses a **3-layer intelligence system** for bulletproof performance:
-
-### Layer 1 — Smart Cache ⚡
-Every insight is hashed and cached for 24 hours. Identical data → instant response. No API calls. No latency.
-
-### Layer 2 — Gemini 2.0 Flash 🚀  
-Fresh insights powered by Google's fastest AI. Generates personalized analysis in <2 seconds with smart fallback keys.
-
-### Layer 3 — Rule-Based Fallback 🛡️
-If Gemini fails (rate limits, network issues, API outage), our rule-based engine kicks in with **identical output structure**. Users never see a failure.
-
-<br/>
-
----
-
-## 🔒 Security & Performance
-
-FINN takes security and speed seriously:
-
-1. **🚀 Granular Skeleton Loading** — No blocking pulses. Dashboards load instantly while data streams in securely.
-2. **🔐 Build-Safe Auth** — Next.js 16 Proxy implementation protecting all `/dashboard/*` routes without build crashes.
-3. **👤 Supabase Auth** — JWT + bcrypt + seamless Google & GitHub OAuth.
-4. **🛡️ Row Level Security (RLS)** — Users only ever interact with their own financial data.
-5. **📄 Smart File Validator** — Safely handles PDFs/CSVs/XLSXs locally or via API before processing.
-
-<br/>
+| Category | Technology |
+|---|---|
+| **Framework** | Next.js 16.2 (App Router) |
+| **Language** | TypeScript 5.0 |
+| **Database** | Supabase (PostgreSQL) |
+| **Auth** | Supabase Auth + @supabase/ssr |
+| **AI** | Google Gemini (2.5 Flash · 3 Flash · 2.0 Flash) |
+| **Styling** | TailwindCSS 4 + CSS Variables |
+| **Components** | shadcn/ui |
+| **Charts** | Recharts |
+| **Animations** | Framer Motion |
+| **File Parsing** | pdf-parse · xlsx · csv-parse |
+| **Rate Limiting** | In-memory Map (server-side) |
+| **Deployment** | Vercel |
 
 ---
 
-## 📦 Getting Started
+## 🤖 AI Architecture — 3-Model Fallback Chain
+
+FINN never crashes due to rate limits. Every Gemini call tries 3 models in sequence:
+
+```
+Request → gemini-2.5-flash
+↓ (rate limited?)
+gemini-3-flash-preview
+↓ (rate limited?)
+gemini-2.0-flash
+↓ (all failed?)
+Local fallback memo
+```
+
+3 API keys × 3 models = **9 attempts before any failure**
+Effective capacity: ~180 AI requests/day on free tier
+
+---
+
+## 📁 Project Structure
+
+```
+finn/
+├── app/
+│   ├── (dashboard)/
+│   │   ├── dashboard/     # Main dashboard
+│   │   ├── brain/         # AI Brain
+│   │   ├── spendlens/     # Spend analysis
+│   │   ├── cashflow/      # CashFlow Copilot
+│   │   ├── chat/          # FINN Chat
+│   │   ├── reports/       # Financial reports
+│   │   ├── compare/       # Month vs Month
+│   │   ├── calendar/      # Financial Calendar
+│   │   ├── leaks/         # Money Leaks
+│   │   ├── budget/        # 50/30/20
+│   │   ├── bills/         # Bills & EMI
+│   │   ├── runway/        # Cash Flow Runway
+│   │   ├── merchants/     # Merchant Intelligence
+│   │   ├── goals/         # Goal Tracker
+│   │   └── tax/           # Tax Readiness
+│   ├── api/
+│   │   ├── upload/        # Statement parser
+│   │   ├── insights/      # AI insights
+│   │   ├── compare/       # Comparison engine
+│   │   ├── calendar/      # Calendar data
+│   │   ├── leaks/         # Leak detector
+│   │   ├── budget-split/  # 50/30/20 calculator
+│   │   ├── bills/         # Bill tracker
+│   │   ├── runway/        # Runway calculator
+│   │   ├── merchants/     # Merchant profiles
+│   │   ├── goals/         # Goal management
+│   │   ├── tax/           # Tax readiness
+│   │   └── chat/          # AI chat
+│   ├── login/
+│   ├── signup/
+│   └── page.tsx           # Landing page
+├── lib/
+│   ├── parser/            # CSV · PDF · XLSX parsers
+│   ├── engine/            # Categorizer · Anomaly · Subscriptions
+│   ├── ai/                # Gemini · Fallback · Cache
+│   ├── database/          # Supabase clients
+│   └── security/          # File validator · Rate limiter
+├── components/
+│   ├── common/            # Navbar · Sidebar · Breadcrumb
+│   ├── landing/           # FluidBackground · AntigravityEffect
+│   └── upload/            # FileDropzone · UploadProgress
+└── hooks/
+    └── useData.ts         # useInsights · useTransactions · useCashFlow
+```
+
+---
+
+## 🚦 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- A [Supabase](https://supabase.com) account (free)
-- A [Gemini API key](https://aistudio.google.com) (free)
-
-### Installation
 
 ```bash
-# 1. Clone the repo
+Node.js >= 18.0.0
+npm >= 9.0.0
+```
+
+### 1. Clone the repository
+
+```bash
 git clone https://github.com/yourusername/finn.git
 cd finn
+```
 
-# 2. Install dependencies
+### 2. Install dependencies
+
+```bash
 npm install
+```
 
-# 3. Set up environment variables
+### 3. Set up environment variables
+
+```bash
 cp .env.example .env.local
 ```
 
-### Environment Variables
-
-Create `.env.local` with these values:
+Fill in your `.env.local`:
 
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Gemini AI (Supports Fallback Keys)
-GEMINI_API_KEY_1=your_gemini_key
-GEMINI_API_KEY_2=your_gemini_key_backup
-
-# App
-NEXT_PUBLIC_APP_URL=https://finn-alpha-eight.vercel.app
+# Gemini AI — add up to 3 keys for fallback
+GEMINI_API_KEY_1=your_first_key
+GEMINI_API_KEY_2=your_second_key
+GEMINI_API_KEY_3=your_third_key
 ```
 
-### Run Locally
+### 4. Set up Supabase database
+
+Run the migration SQL in your Supabase SQL Editor:
+
+```bash
+# Copy contents of supabase/migrations/001_initial.sql
+# Paste and run in Supabase SQL Editor
+```
+
+### 5. Run the development server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and you're in! 🎉
-
-<br/>
+Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 🎯 Use Cases
+## 📤 How To Use
 
-### 💼 The Professional
-*Priya, Software Engineer, Bangalore*  
-"FINN found 3 subscriptions I completely forgot about. Saving ₹1,200 every month now!"
-
-### 🎨 The Freelancer  
-*Rahul, Graphic Designer, Mumbai*  
-"The cashflow predictions are scary accurate. It warned me about a cash crunch 2 weeks before it happened."
-
-### 🎓 The Student
-*Ananya, Computer Science Student, Delhi*  
-"Finally understand where my pocket money goes. The personality feature is hilarious — I'm definitely an Impulse Spender!"
-
-<br/>
-
----
-
-## 🏆 Built for VoidHack April 2026
-
-**Theme:** Intelligent Financial Analytics  
-
-### What Makes FINN Different
-
-| Other Finance Apps | FINN |
-|---|---|
-| ❌ Manual categorization | ✅ AI auto-categorization |
-| ❌ Slow, blocking UI | ✅ Instant granular skeletons |
-| ❌ Basic charts | ✅ Predictive AI insights |
-| ❌ Static reports | ✅ Conversational AI chat & CFO Memos |
-| ❌ Boring UI | ✅ Immersive, animated UX |
-| ❌ Paid subscriptions | ✅ Completely free |
-
-<br/>
-
----
-
-## 🤝 Contributing
-
-This is a hackathon project, but contributions are welcome after April 22, 2026!
-
-```bash
-# Fork, clone, create a branch, commit, push, PR
-git checkout -b feature/your-amazing-feature
-git commit -m 'Add amazing feature'
-git push origin feature/your-amazing-feature
+```
+Create an account or log in
+↓
+Upload your bank statement
+(CSV / PDF / XLSX from any Indian bank)
+↓
+FINN auto-parses and categorises
+everything — takes under 10 seconds
+↓
+Explore your 9 features:
+Dashboard → AI Brain → Compare →
+Calendar → Leaks → Runway → Tax
+↓
+Upload more months for deeper analysis
 ```
 
-<br/>
+### Supported Banks
+HDFC · ICICI · SBI · Axis Bank · Kotak · Yes Bank · and all standard CSV/PDF formats
 
 ---
 
-## 📜 License
+## 🔒 Security
 
-MIT License — feel free to learn from this code, build your own version, or use it commercially.
+- All routes protected via `middleware.ts` using Supabase SSR
+- Row Level Security (RLS) enabled on all tables
+- File validation — type, size and content checks before parsing
+- Rate limiting — 10 uploads per minute per user
+- No raw bank data stored — only processed transactions
 
-<br/>
+---
+
+## 🗺️ Roadmap
+
+- [x] Statement parser (CSV / PDF / XLSX)
+- [x] AI Brain with Gemini
+- [x] Month vs Month comparison
+- [x] Financial Calendar heatmap
+- [x] Money Leaks detector
+- [x] Cash Flow Runway
+- [x] Merchant Intelligence
+- [x] Goal Tracker
+- [x] Tax Readiness
+- [ ] Bank API integration (Setu / Finvu)
+- [ ] Weekly email digest
+- [ ] Mobile app (React Native)
+- [ ] Multi-user / family mode
+- [ ] Export to PDF reports
+- [ ] WhatsApp bot integration
+
+---
+
+## 👨‍💻 Built By
+
+**Yash** — VoidHack April 2026
+
+> *"I built FINN because most finance apps make you manually track every expense. Nobody does that. Your bank statement already has everything — it just needs someone smart enough to read it."*
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details
 
 ---
 
 <div align="center">
 
-## 🧠 FINN
+**FINN — Because your money deserves better than a spreadsheet.**
 
-### *A CFO for normal people. Powered by AI. Available to everyone.*
-
-<br/>
-
-**Built for VoidHack April 2026**
-
-<br/>
-
-[![Star on GitHub](https://img.shields.io/github/stars/yourusername/finn?style=social)](https://github.com/yourusername/finn)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/yourusername?style=social)](https://twitter.com/yourusername)
-
-<br/>
-
-**If FINN helped you, give it a ⭐ on GitHub!**
-
-<br/>
-
-*Made by developers who believe financial intelligence shouldn't be a luxury.*
+⭐ Star this repo if you found it useful
 
 </div>
