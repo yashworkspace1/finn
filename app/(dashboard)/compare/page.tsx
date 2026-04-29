@@ -256,8 +256,11 @@ export default function ComparePage() {
                   <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
                   <Tooltip
-                    contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: 12, boxShadow: 'var(--card-shadow)', fontSize: '12px' }}
-                    formatter={(v: any) => formatINR(v)}
+                    cursor={{ fill: 'rgba(168,85,247,0.08)' }}
+                    contentStyle={{ background: '#1a1530', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '12px', color: '#f5f3ff', fontSize: '11px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '10px 14px' }}
+                    labelStyle={{ color: '#f5f3ff', fontWeight: 700, marginBottom: '6px', fontSize: '11px' }}
+                    itemStyle={{ color: '#c4b5fd', fontSize: '11px' }}
+                    formatter={(v: any, name: string) => [`₹${Number(v).toLocaleString('en-IN')}`, name]}
                   />
                   <Legend iconType="circle" />
                   <Bar dataKey={formatMonth(comparison.monthA)} fill="var(--accent-primary)40" radius={[4, 4, 0, 0]} barSize={20} />

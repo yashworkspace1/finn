@@ -21,6 +21,12 @@ const formatINRShort = (n: number) => {
   return `₹${n}`
 }
 
+const CHART_COLORS = [
+  '#a855f7', '#34d399', '#f87171', '#60a5fa',
+  '#fbbf24', '#f472b6', '#a78bfa', '#fb923c',
+  '#38bdf8', '#4ade80'
+]
+
 export default function SpendLensPage() {
   const [allTransactions, setAllTransactions] = useState<any[]>([])
   const [timeFilter, setTimeFilter] = useState('all')
@@ -138,43 +144,65 @@ export default function SpendLensPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px' }}>
         
         {/* Category Distribution */}
-        <div className="finn-card" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '20px' }}>
-            Category Distribution
-          </h3>
-          <div style={{ height: '220px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%" cy="50%"
-                  innerRadius={60} outerRadius={90}
-                  paddingAngle={5}
-                  dataKey="amount"
-                >
-                  {categoryData.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+        {(() => {
+          const topCategories = categoryData
+          const othersItem = topCategories.find((c: any) =>
+            c.category === 'Others' || c.category === 'Uncategorized'
+          )
+          const totalAmt = topCategories.reduce((s: number, c: any) => s + c.amount, 0)
+          const othersPercentage = othersItem ? (othersItem.amount / totalAmt) * 100 : 0
+
+          let pieData: any[]
+          if (othersPercentage > 60) {
+            const withoutOthers = topCategories
+              .filter((c: any) => c.category !== 'Others' && c.category !== 'Uncategorized')
+              .sort((a: any, b: any) => b.amount - a.amount)
+            if (withoutOthers.length === 0) {
+              pieData = topCategories.slice(0, 8)
+            } else {
+              const top7 = withoutOthers.slice(0, 7)
+              const miscAmount = withoutOthers.slice(7).reduce((s: number, c: any) => s + c.amount, 0)
+              pieData = [
+                ...top7.map((c: any) => ({ ...c, percentage: (c.amount / totalAmt) * 100 })),
+                ...(miscAmount > 0 ? [{ category: 'Others', amount: miscAmount + (othersItem?.amount || 0), percentage: ((miscAmount + (othersItem?.amount || 0)) / totalAmt) * 100 }] : [])
+              ]
+            }
+          } else {
+            pieData = topCategories.slice(0, 8)
+          }
+
+          return (
+            <div className="finn-card" style={{ padding: '22px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Category Distribution</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Where your money went</div>
+              <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                <ResponsiveContainer width={200} height={200}>
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={2} dataKey="amount" nameKey="category">
+                      {pieData.map((_: any, index: number) => (
+                        <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="transparent" />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ background: '#1a1530', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '10px', color: '#f5f3ff', fontSize: '11px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
+                      formatter={(value: any, name: any) => [formatINR(value), name]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {pieData.map((cat: any, i: number) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: CHART_COLORS[i % CHART_COLORS.length], flexShrink: 0, boxShadow: `0 0 6px ${CHART_COLORS[i % CHART_COLORS.length]}60` }} />
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.category}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>{formatINR(cat.amount)}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '32px', textAlign: 'right' }}>{cat.percentage?.toFixed(0)}%</span>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: 12, boxShadow: 'var(--card-shadow)', fontSize: '12px' }}
-                  formatter={(v: any) => formatINR(v)}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-            {categoryData.slice(0, 4).map((cat: any, i: number) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: cat.color }} />
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>{cat.category}</span>
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>{cat.percentage}%</span>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          )
+        })()}
 
         {/* Daily Activity */}
         <div className="finn-card" style={{ padding: '24px' }}>
@@ -184,23 +212,32 @@ export default function SpendLensPage() {
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={dailyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
-                axisLine={false} tickLine={false}
-                tickFormatter={(str) => new Date(str).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+                interval={Math.floor((dailyData?.length || 30) / 8)}
               />
-              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+              <YAxis
+                tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={v => `₹${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`}
+                width={42}
+              />
               <Tooltip
-                cursor={{ fill: 'var(--bg-elevated)', opacity: 0.4 }}
-                contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: 12, boxShadow: 'var(--card-shadow)', fontSize: '12px' }}
-                formatter={(v: any) => formatINR(v)}
+                cursor={{ fill: 'rgba(168,85,247,0.08)' }}
+                contentStyle={{ background: '#1a1530', border: '1px solid rgba(168,85,247,0.25)', borderRadius: '10px', color: '#f5f3ff', fontSize: '11px', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
+                labelStyle={{ color: '#f5f3ff', fontWeight: 700, marginBottom: '4px' }}
+                itemStyle={{ color: '#a09abf' }}
+                formatter={(v: any) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Spent']}
               />
-              <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={12}>
+              <Bar dataKey="amount" fill="#a855f7" radius={[3, 3, 0, 0]} maxBarSize={12}>
                 {dailyData.map((entry: any, index: number) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.hasAnomaly ? 'var(--expense-color)' : 'var(--accent-primary)'} 
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.hasAnomaly ? 'var(--expense-color)' : '#a855f7'}
                   />
                 ))}
               </Bar>
