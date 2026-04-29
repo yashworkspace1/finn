@@ -4,8 +4,8 @@ import { useInsights, useCashFlow } from '@/hooks/useData'
 import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 import {
-  AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { useState } from 'react'
 import {
@@ -44,6 +44,12 @@ export default function DashboardPage() {
   const stats = insightsData?.stats
   const insightsList = insightsData?.insights?.insights || []
   const topCategories = insightsData?.stats?.topCategories || []
+  const healthScore = stats?.healthScore || 0
+  const savingsRate = stats?.savingsRate || 0
+  const totalIncome = stats?.totalIncome || 0
+  const totalExpenses = stats?.totalExpenses || 0
+  const anomalyCount = stats?.anomalyCount || 0
+  const scoreColor = healthScore >= 70 ? '#34d399' : healthScore >= 40 ? '#fbbf24' : '#f87171'
 
   return (
     <div className="flex flex-col gap-[20px]">
@@ -302,6 +308,128 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      {/* ── CATEGORY BREAKDOWN CHART ── */}
+      {topCategories.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+
+          {/* Horizontal bar chart */}
+          <div className="finn-card" style={{ padding: '20px', background: 'var(--bg-surface)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Top Categories
+              </div>
+              <Link href="/spendlens" style={{ fontSize: '11px', color: 'var(--accent-text)', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                View all <ArrowUpRight size={11} />
+              </Link>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={topCategories.slice(0, 6)}
+                layout="vertical"
+                margin={{ left: 10, right: 20 }}
+              >
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={v => formatINRShort(v)}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="category"
+                  tick={{ fontSize: 10, fill: 'var(--text-secondary)', fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={70}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '10px',
+                    fontSize: '11px'
+                  }}
+                  formatter={(v: any) => formatINR(v)}
+                />
+                <Bar dataKey="amount" name="Spent" radius={[0, 6, 6, 0]}>
+                  {topCategories.slice(0, 6).map((_: any, index: number) => (
+                    <Cell
+                      key={index}
+                      fill={['#a855f7','#34d399','#f87171','#60a5fa','#fbbf24','#f472b6'][index]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Health score donut + metrics */}
+          <div className="finn-card" style={{ padding: '20px', background: 'var(--bg-surface)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>
+              Financial Health
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {/* Donut */}
+              <div style={{ position: 'relative', width: '110px', height: '110px', flexShrink: 0 }}>
+                <ResponsiveContainer width={110} height={110}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { value: healthScore },
+                        { value: 100 - healthScore }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={36}
+                      outerRadius={50}
+                      startAngle={90}
+                      endAngle={-270}
+                      dataKey="value"
+                      paddingAngle={0}
+                    >
+                      <Cell fill={scoreColor} />
+                      <Cell fill="var(--bg-elevated)" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: scoreColor, lineHeight: 1 }}>{healthScore}</div>
+                  <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>/ 100</div>
+                </div>
+              </div>
+
+              {/* Metric rows */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  { label: 'Savings Rate', value: `${savingsRate.toFixed(1)}%`, target: 20, current: Math.min(savingsRate, 20), color: savingsRate >= 20 ? '#34d399' : '#f87171' },
+                  { label: 'Spend Control', value: totalExpenses < totalIncome ? 'Good' : 'Poor', target: 100, current: totalExpenses < totalIncome ? 70 : 20, color: totalExpenses < totalIncome ? '#34d399' : '#f87171' },
+                  { label: 'Anomaly Free', value: `${Math.max(0, 100 - anomalyCount * 5)}%`, target: 100, current: Math.max(0, 100 - anomalyCount * 5), color: '#a855f7' },
+                ].map((m, i) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{m.label}</span>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: m.color }}>{m.value}</span>
+                    </div>
+                    <div style={{ height: '4px', background: 'var(--bg-elevated)', borderRadius: '999px' }}>
+                      <div style={{
+                        width: `${(m.current / m.target) * 100}%`,
+                        height: '100%', borderRadius: '999px',
+                        background: m.color, transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

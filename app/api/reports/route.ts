@@ -1,13 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/database/supabaseServer'
-import { categorizeTransactions } from '@/lib/engine/categorizer'
-import { detectAnomalies } from '@/lib/engine/anomaly'
-import { detectSubscriptions } from '@/lib/engine/subscriptions'
-import { calculateHealthScore } from '@/lib/engine/scorer'
-import { detectPersonality } from '@/lib/engine/personality'
-import { predictCashFlow } from '@/lib/engine/predictor'
-import { getMonthlySpend, getMonthlyIncome, getTopCategories, getTotalIncome, getTotalExpenses, getSavingsRate } from '@/lib/engine/stats'
-import { Transaction } from '@/lib/parser/normalizer'
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,126 +9,144 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: rawTxns, error: fetchErr } = await supabase
+    // Fetch all transactions
+    const { data: transactions, error } = await supabase
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
       .order('date', { ascending: true })
 
-    if (fetchErr) throw fetchErr
+    if (error) throw error
+    const txs = transactions || []
 
-    if (!rawTxns || rawTxns.length === 0) {
-      return NextResponse.json({ error: 'No transactions found.' }, { status: 404 })
+    if (txs.length === 0) {
+      return NextResponse.json({
+        report: null,
+        monthlyTrend: [],
+        topCategories: [],
+        highlights: null,
+        message: 'No transactions found'
+      })
     }
 
-    let transactions = categorizeTransactions(rawTxns)
-    transactions = detectAnomalies(transactions) as typeof transactions
-    transactions = detectSubscriptions(transactions) as typeof transactions
+    // Core totals — amounts always positive, use type for direction
+    const totalIncome = txs
+      .filter(t => t.type === 'credit')
+      .reduce((s, t) => s + Number(t.amount), 0)
 
-    const healthScore = calculateHealthScore(transactions)
-    const personality = detectPersonality(transactions)
-    const cashFlow = predictCashFlow(transactions)
-    const topCategories = getTopCategories(transactions)
-    
-    const totalIncome = getTotalIncome(transactions)
-    const totalExpenses = getTotalExpenses(transactions)
-    const savingsRate = getSavingsRate(transactions)
+    const totalExpenses = txs
+      .filter(t => t.type === 'debit')
+      .reduce((s, t) => s + Number(t.amount), 0)
 
-    // Calculate trends (basic comparison of last 30 days vs previous 30 days)
-    const msInDay = 24 * 60 * 60 * 1000
-    const now = Date.now()
-    
-    const currentPeriodTxns = transactions.filter(t => (now - new Date(t.date).getTime()) <= 30 * msInDay)
-    const prevPeriodTxns = transactions.filter(t => {
-      const diff = now - new Date(t.date).getTime()
-      return diff > 30 * msInDay && diff <= 60 * msInDay
+    const netSavings = totalIncome - totalExpenses
+    const savingsRate = totalIncome > 0 ? (netSavings / totalIncome) * 100 : 0
+
+    // Monthly trend — group by YYYY-MM
+    const monthMap: Record<string, { month: string; income: number; expenses: number; savings: number }> = {}
+
+    txs.forEach(t => {
+      const month = t.month || t.date?.slice(0, 7)
+      if (!month) return
+      if (!monthMap[month]) {
+        monthMap[month] = { month, income: 0, expenses: 0, savings: 0 }
+      }
+      if (t.type === 'credit') monthMap[month].income += Number(t.amount)
+      if (t.type === 'debit') monthMap[month].expenses += Number(t.amount)
     })
 
-    const currIncome = getTotalIncome(currentPeriodTxns)
-    const currExpenses = getTotalExpenses(currentPeriodTxns)
-    const prevIncome = getTotalIncome(prevPeriodTxns)
-    const prevExpenses = getTotalExpenses(prevPeriodTxns)
+    const monthlyTrend = Object.values(monthMap)
+      .map(m => ({
+        ...m,
+        savings: m.income - m.expenses,
+        // Short label for chart
+        label: new Date(m.month + '-01').toLocaleString('en-IN', { month: 'short', year: '2-digit' })
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month))
 
-    const incomeChange = prevIncome > 0 ? ((currIncome - prevIncome) / prevIncome) * 100 : 0
-    const expenseChange = prevExpenses > 0 ? ((currExpenses - prevExpenses) / prevExpenses) * 100 : 0
-    
-    const currSavingsRate = getSavingsRate(currentPeriodTxns)
-    const prevSavingsRate = getSavingsRate(prevPeriodTxns)
-    const savingsChange = currSavingsRate - prevSavingsRate
+    // Top categories
+    const catMap: Record<string, number> = {}
+    txs.filter(t => t.type === 'debit').forEach(t => {
+      const cat = t.category || 'Others'
+      catMap[cat] = (catMap[cat] || 0) + Number(t.amount)
+    })
 
-    const anomalies = transactions.filter(t => (t as { is_anomaly?: boolean }).is_anomaly)
-    const subscriptions = transactions.filter(t => (t as { is_subscription?: boolean }).is_subscription)
-    
-    // Calculate category spending
-    const byCategory = transactions.reduce((acc, t) => {
-      if (t.type === 'debit') {
-        const cat = t.category || 'Others'
-        acc[cat] = (acc[cat] || 0) + t.amount
-      }
-      return acc
-    }, {} as Record<string, number>)
+    const topCategories = Object.entries(catMap)
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 10)
 
-    // Monthly trend — group transactions by month
-    const monthlyTrend = transactions.reduce((acc: any[], tx: any) => {
-      const month = tx.date?.slice(0, 7); // "YYYY-MM"
-      if (!month) return acc;
-      let entry = acc.find(e => e.month === month);
-      if (!entry) { entry = { month, income: 0, expenses: 0 }; acc.push(entry); }
-      if (tx.amount > 0) entry.income += tx.amount;
-      else entry.expenses += Math.abs(tx.amount);
-      return acc;
-    }, []).sort((a, b) => a.month.localeCompare(b.month));
+    // Highlights — computed from monthlyTrend
+    const bestSavingsMonth = monthlyTrend.length > 0
+      ? [...monthlyTrend].sort((a, b) => b.savings - a.savings)[0]
+      : null
 
-    // Highlights
-    const savingsMonths = monthlyTrend.map(m => ({ month: m.month, savings: m.income - m.expenses }));
-    const bestSavings = savingsMonths.sort((a, b) => b.savings - a.savings)[0] || null;
-    const worstSpend = [...monthlyTrend].sort((a, b) => b.expenses - a.expenses)[0] || null;
-    const biggestTx = [...transactions].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0] || null;
-    const highlights = { bestSavingsMonth: bestSavings, worstSpendMonth: worstSpend, biggestTransaction: biggestTx };
+    const highestSpendMonth = monthlyTrend.length > 0
+      ? [...monthlyTrend].sort((a, b) => b.expenses - a.expenses)[0]
+      : null
+
+    const biggestTransaction = txs.length > 0
+      ? [...txs].sort((a, b) => Number(b.amount) - Number(a.amount))[0]
+      : null
+
+    // Most consistent category — appears in most months
+    const catMonthCount: Record<string, Set<string>> = {}
+    txs.filter(t => t.type === 'debit').forEach(t => {
+      const cat = t.category || 'Others'
+      const month = t.month || t.date?.slice(0, 7)
+      if (!catMonthCount[cat]) catMonthCount[cat] = new Set()
+      if (month) catMonthCount[cat].add(month)
+    })
+
+    const mostConsistentCategory = Object.entries(catMonthCount)
+      .sort((a, b) => b[1].size - a[1].size)[0]?.[0] || null
+
+    const highlights = {
+      bestSavingsMonth: bestSavingsMonth
+        ? { month: bestSavingsMonth.label, amount: bestSavingsMonth.savings }
+        : null,
+      highestSpendMonth: highestSpendMonth
+        ? { month: highestSpendMonth.label, amount: highestSpendMonth.expenses }
+        : null,
+      biggestTransaction: biggestTransaction
+        ? {
+            description: biggestTransaction.description || biggestTransaction.merchant || 'Unknown',
+            amount: Number(biggestTransaction.amount),
+            date: biggestTransaction.date,
+            type: biggestTransaction.type
+          }
+        : null,
+      mostConsistentCategory
+    }
+
+    // Anomaly and subscription counts
+    const anomalyCount = txs.filter(t => t.is_anomaly).length
+    const subscriptionCount = txs.filter(t => t.is_subscription).length
+
+    const dateFrom = txs[0]?.date
+    const dateTo = txs[txs.length - 1]?.date
 
     return NextResponse.json({
-      success: true,
       report: {
-        period: {
-          from: transactions[0].date,
-          to: transactions[transactions.length - 1].date,
-          days: Math.round((new Date(transactions[transactions.length - 1].date).getTime() - new Date(transactions[0].date).getTime()) / msInDay) || 1
-        },
-        income: {
-          total: totalIncome,
-          average: Object.values(getMonthlyIncome(transactions)).reduce((a, b) => a + b, 0) / Math.max(1, Object.keys(getMonthlyIncome(transactions)).length),
-          trend: incomeChange > 0 ? 'up' : incomeChange < 0 ? 'down' : 'stable'
-        },
-        expenses: {
-          total: totalExpenses,
-          average: Object.values(getMonthlySpend(transactions)).reduce((a, b) => a + b, 0) / Math.max(1, Object.keys(getMonthlySpend(transactions)).length),
-          trend: expenseChange > 0 ? 'up' : expenseChange < 0 ? 'down' : 'stable',
-          byCategory
-        },
-        savings: {
-          amount: totalIncome - totalExpenses,
-          rate: savingsRate,
-          trend: savingsChange > 0 ? 'up' : savingsChange < 0 ? 'down' : 'stable'
-        },
-        topTransactions: transactions.sort((a, b) => b.amount - a.amount).slice(0, 10),
-        anomalies: { count: anomalies.length, transactions: anomalies },
-        subscriptions: { count: subscriptions.length, monthlyTotal: subscriptions.reduce((s,t) => s + (t as any).amount, 0) },
-        healthScore: { score: healthScore.score, grade: healthScore.grade },
-        personality,
-        cashFlow,
-        comparisonToPrevious: {
-          incomeChange,
-          expenseChange,
-          savingsChange
-        }
+        period_start: dateFrom,
+        period_end: dateTo,
+        total_income: totalIncome,
+        total_expenses: totalExpenses,
+        net_savings: netSavings,
+        savings_rate: savingsRate,
+        anomaly_count: anomalyCount,
+        subscription_count: subscriptionCount,
       },
-      topCategories,
       monthlyTrend,
-      highlights
+      topCategories,
+      highlights,
     })
 
   } catch (error) {
-    console.error('Reports error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[Reports] Error:', error)
+    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 })
   }
 }
