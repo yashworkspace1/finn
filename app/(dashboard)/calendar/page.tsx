@@ -91,9 +91,25 @@ export default function CalendarPage() {
           <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
             <ChevronLeft size={18} />
           </button>
-          <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', minWidth: '120px', textAlign: 'center' }}>
-            {MONTHS[month-1]} {year}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <select 
+              value={month} 
+              onChange={e => setMonth(parseInt(e.target.value))}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 800, outline: 'none', cursor: 'pointer' }}
+            >
+              {MONTHS.map((m, i) => <option key={m} value={i + 1} style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}>{m}</option>)}
+            </select>
+            <select 
+              value={year} 
+              onChange={e => setYear(parseInt(e.target.value))}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 800, outline: 'none', cursor: 'pointer' }}
+            >
+              {Array.from({ length: 10 }).map((_, i) => {
+                const y = new Date().getFullYear() - 5 + i
+                return <option key={y} value={y} style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}>{y}</option>
+              })}
+            </select>
+          </div>
           <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
             <ChevronRight size={18} />
           </button>

@@ -63,51 +63,98 @@
 
 ---
 
-## 🎯 Four Tools. One Financial Brain.
+## 🎯 Comprehensive Financial Suite
 
+FINN provides a complete ecosystem of tools to analyze, protect, and grow your wealth.
+
+### 📊 Analysis Core
 <table>
 <tr>
 <td width="50%">
 
-### 👁️ SpendLens
+### 👁️ SpendLens & Merchants
 **See every rupee clearly.**
 
-Auto-categorize transactions across 13 categories. Detect unusual spending with Z-score analysis. Track forgotten subscriptions before they drain your wallet.
+Auto-categorize transactions across 13+ categories. Deep dive into merchant-specific spending habits and track Z-score anomalies.
 
-`12+ categories` · `Anomaly detection` · `Subscription tracker`
-
+`13+ categories` · `Merchant tracking` · `Anomaly alerts`
 </td>
 <td width="50%">
 
-### 📈 CashFlow Copilot
-**Predict your financial future.**
+### 📈 CashFlow & Compare
+**Understand your financial momentum.**
 
-AI-powered predictions warn you about cash crunches **before they happen**. 30-day forecasts using moving averages and linear regression.
+Compare spending month-over-month. Forecast upcoming crunches with 30-day moving averages and regression models.
 
-`30-day forecasts` · `Crunch alerts` · `Trend analysis`
-
+`30-day forecasts` · `MoM Comparisons` · `Trend analysis`
 </td>
 </tr>
+</table>
+
+### 🛡️ Protection & Planning
+<table>
+<tr>
+<td width="50%">
+
+### 💧 Money Leaks & Subscriptions
+**Plug the holes in your wallet.**
+
+Identify forgotten recurring charges, hidden fees, and impulse purchases before they drain your accounts.
+
+`Subscription tracker` · `Fee detection` · `Impulse analysis`
+</td>
+<td width="50%">
+
+### ⚖️ 50/30/20 & Budgeting
+**Automated financial discipline.**
+
+Instantly see how your spending aligns with the golden 50/30/20 rule (Needs/Wants/Savings) without manual math.
+
+`Zero-based budgeting` · `Rule compliance` · `Expense splitting`
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### ⏳ Runway & Bills
+**Know exactly how long you can survive.**
+
+Calculate your financial runway based on current liquid assets and burn rate. Never miss an EMI with smart bill tracking.
+
+`Burn rate analysis` · `EMI tracking` · `Survival metrics`
+</td>
+<td width="50%">
+
+### 📅 Calendar & Goals
+**Time-based financial planning.**
+
+Visualize cash flow on a daily calendar view. Set, track, and predict completion dates for your financial goals.
+
+`Heatmap calendar` · `Goal prediction` · `Tax estimations`
+</td>
+</tr>
+</table>
+
+### 🤖 AI Intelligence
+<table>
 <tr>
 <td width="50%">
 
 ### 💬 FINN Chat
 **Talk to your finances.**
 
-Ask anything in plain language. FINN knows YOUR data and gives specific, personalized answers. Powered by Gemini 2.0 Flash with smart fallback.
+Ask anything in plain language. FINN knows YOUR data and gives specific, personalized answers powered by Gemini 2.0.
 
 `Natural language` · `Context-aware` · `Instant answers`
-
 </td>
 <td width="50%">
 
-### 🧠 AI Brain
-**Your financial personality.**
+### 🧠 AI Brain & Personality
+**Your financial psyche.**
 
-Discover if you're a Weekend Warrior 🎉, Subscription Hoarder 📦, or Steady Saver 🏦. Get weekly AI nudges. Track your health score over time.
+Discover if you're a Weekend Warrior 🎉 or a Steady Saver 🏦. Get weekly personalized AI nudges and CFO memos.
 
 `6 personality types` · `Weekly nudges` · `Health score`
-
 </td>
 </tr>
 </table>
@@ -314,7 +361,7 @@ GEMINI_API_KEY_1=your_gemini_key
 GEMINI_API_KEY_2=your_gemini_key_backup
 
 # App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://finn-alpha-eight.vercel.app
 ```
 
 ### Run Locally

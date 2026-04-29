@@ -27,3 +27,26 @@ export async function GET(request: Request) {
     count: data?.length || 0
   })
 }
+
+export async function DELETE(request: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('user_id', user.id)
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
+
+  // Also clear insights cache if needed
+  await supabase.from('insights').delete().eq('user_id', user.id)
+
+  return Response.json({ success: true })
+}
