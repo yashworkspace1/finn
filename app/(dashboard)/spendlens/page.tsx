@@ -285,25 +285,80 @@ export default function SpendLensPage() {
         {/* Subscriptions */}
         <div className="finn-card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>Recurring Payments</h3>
-            <span style={{ fontSize: '11px', fontWeight: 700, background: 'var(--health-bg)', color: 'var(--health-color)', padding: '2px 8px', borderRadius: '6px' }}>
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '2px' }}>Recurring Payments</h3>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Auto-detected from your statement</p>
+            </div>
+            <span style={{
+              fontSize: '11px', fontWeight: 700,
+              background: subscriptions.length > 0 ? 'rgba(168,85,247,0.12)' : 'var(--bg-elevated)',
+              color: subscriptions.length > 0 ? '#a855f7' : 'var(--text-muted)',
+              padding: '4px 10px', borderRadius: '20px',
+              border: `1px solid ${subscriptions.length > 0 ? 'rgba(168,85,247,0.3)' : 'var(--border-subtle)'}`
+            }}>
               {subscriptions.length} Found
             </span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            {subscriptions.slice(0, 6).map((t: any, i: number) => (
-              <div key={i} style={{ 
-                padding: '12px', background: 'var(--bg-elevated)', borderRadius: '12px',
-                border: '1px solid var(--border-subtle)'
-              }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {t.description}
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent-primary)' }}>{formatINRShort(t.amount)}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>{t.date}</div>
+
+          {subscriptions.length === 0 ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', padding: '32px 20px', textAlign: 'center',
+              background: 'var(--bg-elevated)', borderRadius: '14px',
+              border: '1px dashed var(--border-subtle)'
+            }}>
+              <div style={{
+                width: '48px', height: '48px', borderRadius: '14px',
+                background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '22px', marginBottom: '12px'
+              }}>💳</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                No recurring payments found
               </div>
-            ))}
-          </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '220px', lineHeight: 1.5 }}>
+                FINN automatically detects subscriptions and recurring charges from your bank statement. Upload more months to improve detection.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {subscriptions.slice(0, 6).map((t: any, i: number) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '12px 14px', background: 'var(--bg-elevated)',
+                  borderRadius: '12px', border: '1px solid var(--border-subtle)',
+                  transition: 'border-color 0.2s'
+                }}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                    background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px'
+                  }}>
+                    🔄
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      marginBottom: '3px'
+                    }}>
+                      {t.description}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.date}</span>
+                      <span style={{
+                        fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px',
+                        background: 'rgba(168,85,247,0.1)', color: '#a855f7'
+                      }}>RECURRING</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 900, color: '#a855f7', flexShrink: 0 }}>
+                    {formatINRShort(t.amount)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
