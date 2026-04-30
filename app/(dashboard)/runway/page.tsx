@@ -43,7 +43,7 @@ export default function RunwayPage() {
 
   if (loading) return <RunwaySkeleton />
 
-  if (!data || data.error) {
+  if (!data || data.error || data.empty) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div style={{

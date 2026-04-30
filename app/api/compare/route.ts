@@ -40,19 +40,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please provide two different months' }, { status: 400 })
     }
 
-    // Check comparison cache first
-    const { data: cached } = await supabase
-      .from('comparisons')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('month_a', monthA)
-      .eq('month_b', monthB)
-      .single()
-
-    if (cached && cached.cfo_memo) {
-      // Don't return cached — always recompute to get full data
-      // Cache is only used to store, not retrieve
-    }
 
     // Fetch transactions for both months
     const [{ data: txA }, { data: txB }] = await Promise.all([

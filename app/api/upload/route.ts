@@ -253,6 +253,24 @@ export async function POST(request: NextRequest) {
       .delete()
       .eq('user_id', user.id)
 
+    // 15. Invalidate comparison cache for any month just re-uploaded
+    // so Compare page always re-computes fresh deltas
+    const uploadedMonths = Object.keys(txsByMonth)
+    if (uploadedMonths.length > 0) {
+      await Promise.all([
+        supabase
+          .from('comparisons')
+          .delete()
+          .eq('user_id', user.id)
+          .in('month_a', uploadedMonths),
+        supabase
+          .from('comparisons')
+          .delete()
+          .eq('user_id', user.id)
+          .in('month_b', uploadedMonths),
+      ])
+    }
+
     const totalMs = Date.now() - t0
 
     return NextResponse.json({

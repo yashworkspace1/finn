@@ -20,7 +20,22 @@ export async function GET(request: NextRequest) {
     const stmts = statements || []
 
     if (stmts.length === 0) {
-      return NextResponse.json({ error: 'No statements found' }, { status: 400 })
+      return NextResponse.json({
+        avgIncome: 0,
+        avgExpenses: 0,
+        avgMonthlySavings: 0,
+        detectableSavings: 0,
+        runwayMonths: 0,
+        status: 'critical',
+        statusMessage: 'No data — upload a bank statement to calculate your runway',
+        statusColor: '#6b7280',
+        targetRunwayMonths: 6,
+        savingsGap: 0,
+        monthlyTopUp: 0,
+        monthlyData: [],
+        statementCount: 0,
+        empty: true,
+      })
     }
 
     // Average monthly income and expenses over last 6 months

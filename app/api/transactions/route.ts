@@ -36,17 +36,35 @@ export async function DELETE(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { error } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('user_id', user.id)
+  const uid = user.id
 
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 })
+  // Clear ALL user data — full reset
+  const tables = [
+    'transactions',
+    'statements',
+    'recurring_bills',
+    'insights',
+    'goals',
+    'goal_progress',
+    'merchant_profiles',
+    'cashflow',
+    'chat_history',
+    'comparisons',
+  ]
+
+  const results = await Promise.allSettled(
+    tables.map(table =>
+      supabase.from(table).delete().eq('user_id', uid)
+    )
+  )
+
+  const failures = results
+    .map((r, i) => r.status === 'rejected' ? tables[i] : null)
+    .filter(Boolean)
+
+  if (failures.length > 0) {
+    console.warn('[Clear Data] Some tables failed to clear:', failures)
   }
 
-  // Also clear insights cache if needed
-  await supabase.from('insights').delete().eq('user_id', user.id)
-
-  return Response.json({ success: true })
+  return Response.json({ success: true, cleared: tables })
 }
